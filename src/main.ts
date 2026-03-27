@@ -10,8 +10,13 @@ async function bootstrap() {
     {
       transport: Transport.GRPC,
       options: {
-        package: ['user'],
-        protoPath: [join(__dirname, '../shared/proto/user.proto')],
+        package: ['session', 'user', 'auth', 'device'],
+        protoPath: [
+          join(__dirname, '../shared/proto/user.proto'),
+          join(__dirname, '../shared/proto/auth.proto'),
+          join(__dirname, '../shared/proto/device.proto'),
+          join(__dirname, '../shared/proto/session.proto'),
+        ],
         url: '0.0.0.0:50052',
         loader: {
           keepCase: true,
