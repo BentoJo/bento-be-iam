@@ -1,10 +1,12 @@
+import 'dotenv/config';
 import { AppModule } from './modules/app.module';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 
 async function bootstrap() {
-  console.log(__dirname);
+  const grpcPort = process.env.GRPC_PORT || '50052';
+
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {
@@ -17,7 +19,7 @@ async function bootstrap() {
           join(__dirname, '../shared/proto/device.proto'),
           join(__dirname, '../shared/proto/session.proto'),
         ],
-        url: '0.0.0.0:50052',
+        url: `0.0.0.0:${grpcPort}`,
         loader: {
           keepCase: true,
           defaults: true,
@@ -26,6 +28,8 @@ async function bootstrap() {
       },
     },
   );
+
   await app.listen();
+  console.log(`IAM gRPC microservice running on port ${grpcPort}`);
 }
 bootstrap();
