@@ -5,8 +5,8 @@ services:
     container_name: iam-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-iam_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_USER: ${POSTGRES_USER:-iam_service}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iam@service1234}
       POSTGRES_DB: ${POSTGRES_DB:-iam}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -14,7 +14,7 @@ services:
       - iam-db-data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iam_user} -d ${POSTGRES_DB:-iam}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iam_service} -d ${POSTGRES_DB:-iam}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-iam_user}:${POSTGRES_PASSWORD:-changeme}@iam-db:5432/${POSTGRES_DB:-iam}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-iam_service}:${POSTGRES_PASSWORD:-iam@service1234}@iam-db:5432/${POSTGRES_DB:-iam}
       GRPC_PORT: ${GRPC_PORT:-50052}
     ports:
       - "${GRPC_PORT:-50052}:50052"

@@ -1,7 +1,7 @@
 # ============================================
 # Stage 1: Install production dependencies
 # ============================================
-FROM node:22-alpine AS deps
+FROM node:lts as alpine
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN npm ci --omit=dev
 # ============================================
 # Stage 2: Build the application
 # ============================================
-FROM node:22-alpine AS build
+FROM node:lts AS build
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN npm run build
 # ============================================
 # Stage 3: Production image
 # ============================================
-FROM node:22-alpine AS production
+FROM node:lts AS production
 
 ENV NODE_ENV=production
 
