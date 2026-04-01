@@ -1,50 +1,25 @@
+version: '3.9'
 services:
-  # ── PostgreSQL Database ──────────────────────────
   iam-db:
-    image: postgres:16-alpine
+    image: postgres:18
     container_name: iam-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-iam_service}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iam@service1234}
-      POSTGRES_DB: ${POSTGRES_DB:-iam}
+    restart: always
+    env_file:
+      - .env
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
-      - iam-db-data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iam_service} -d ${POSTGRES_DB:-iam}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - iam-network
-
-  # ── IAM gRPC Microservice ───────────────────────
+      - postgres_data:/var/lib/postgresql
   iam-service:
     build:
       context: .
-      dockerfile: Dockerfile
+      target: runner   
     container_name: iam-service
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-iam_service}:${POSTGRES_PASSWORD:-iam@service1234}@iam-db:5432/${POSTGRES_DB:-iam}
-      GRPC_PORT: ${GRPC_PORT:-50052}
+    restart: always
     ports:
-      - "${GRPC_PORT:-50052}:50052"
-    depends_on:
-      iam-db:
-        condition: service_healthy
-    networks:
-      - iam-network
+      - "50052:50052"
+    env_file:
+      - .env
 
 volumes:
-  iam-db-data:
-    driver: local
-
-networks:
-  iam-network:
-    driver: bridge
+  postgres_data:
