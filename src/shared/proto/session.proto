@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package session;
+
+service SessionService {
+    rpc CreateSession (CreateSessionRequest) returns (CreateSessionResponse);
+    rpc GetSession (GetSessionRequest) returns (GetSessionResponse);
+}
+
+message CreateSessionRequest {
+    string user_id = 1;
+    string device_id = 2;
+}
+
+message CreateSessionResponse {
+    string session_id = 1;
+    string user_id = 2;
+    string device_id = 3;
+    int64 created_at = 4;
+}
+
+message GetSessionRequest {
+    string session_id = 1;
+}
+
+message GetSessionResponse {
+    string session_id = 1;
+    string user_id = 2;
+    string device_id = 3;
+    int64 created_at = 4;
+}

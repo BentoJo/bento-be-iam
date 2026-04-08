@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package user;
+
+service CommentService {
+    rpc AddComment (AddCommentRequest) returns (CommentResponse);
+    rpc GetCommentsByPost (GetCommentRequest) returns (CommentListResponse);
+}
+
+message AddCommentRequest {
+    string post_id = 1;
+    string content = 2;
+}
+
+message GetCommentRequest {
+    string id = 1;
+}
+
+message CommentResponse {
+    string id = 1;
+    string post_id = 2;
+    string content = 3;
+}
+message CommentListResponse {
+    repeated CommentResponse comments = 1;
+}
