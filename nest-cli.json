@@ -6,9 +6,11 @@
     "deleteOutDir": true,
     "assets": [
       {
-        "include": "**/*.proto"
+        "include": "../src/shared/proto/**/*.proto",
+        "outDir": "dist/src/",
+        "watchAssets": true,
+        "flat": false
       }
-    ],
-    "watchAssets": true
+    ]
   }
 }
