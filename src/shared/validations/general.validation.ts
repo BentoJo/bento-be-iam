@@ -195,3 +195,16 @@ export const validateUUID = (
   }
   return { valid: true };
 };
+
+export const validateDeviceID = (deviceId: string): ValidationResult => {
+  if (typeof deviceId !== 'string') {
+    return { valid: false, message: 'Device ID must be a string' };
+  }
+  if (deviceId.length < 5 || deviceId.length > 100) {
+    return {
+      valid: false,
+      message: 'Device ID must be between 5 and 100 characters',
+    };
+  }
+  return { valid: true };
+};

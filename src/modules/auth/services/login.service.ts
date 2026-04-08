@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LoginRequest, LoginResponse } from '../../../shared/types/auth/login';
-import { validateRequired } from '../../../shared/validations';
+import { validateEmail, validateRequired } from '../../../shared/validations';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 
@@ -10,14 +10,30 @@ export class LoginService {
     const { email, device_id, device_name, user_agent, ip_address } = data;
 
     //Validation
+
+    return 0;
   }
 
-  private validateInputs({email, device_id, user_agent}: {email}): void {
-    const requiredData = validateRequired(email, 'Email');
-    if (!requiredData.valid) {
+  private validateInputs({
+    email,
+    device_id,
+    device_name,
+    user_agent,
+    ip_address,
+  }: LoginRequest): void {
+    const requiredResult = validateRequired(email, 'Email');
+    if (!requiredResult.valid) {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
-        message: requiredData.message,
+        message: requiredResult.message,
+      });
+    }
+
+    const emailResult = validateEmail(email);
+    if (!emailResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: emailResult.message,
       });
     }
   }

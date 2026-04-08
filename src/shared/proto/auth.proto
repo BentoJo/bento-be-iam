@@ -28,10 +28,10 @@ message RegisterResponse {
 
 message LoginRequest {
   string email = 1;
-  string device_id = 2;
-  string device_name = 3;
-  string user_agent = 4;
-  string ip_address = 5;
+  string deviceId = 2;
+  string deviceName = 3;
+  string userAgent = 4;
+  string ipAddress = 5;
 }
 
 message LoginResponse {

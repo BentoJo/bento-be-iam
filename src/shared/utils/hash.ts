@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-export const hash = async (v: string) => {
+export const hash = async (v: string) =>
   crypto
     .createHmac(
       'sha256',
@@ -8,4 +8,3 @@ export const hash = async (v: string) => {
     )
     .update(v)
     .digest('hex');
-};
