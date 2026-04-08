@@ -1,16 +1,13 @@
 import { and, eq, sql } from 'drizzle-orm';
 import db from '../../../src/shared/configs/db.config';
 import { sendEmail } from '../../../src/shared/configs/ses.config';
-import { otpTypeEnum, otps } from '../../../src/shared/db/schema';
+import { otps } from '../../../src/shared/db/schema';
 import { generateOtp } from './generate-otp';
 import { hash } from './hash';
 import { loginEmail } from './loginEmail';
 import { registerEmail } from './registrationEmail';
-import { PgTransaction } from 'drizzle-orm/pg-core';
+import { OtpType } from '../types/utils/otp';
 
-type DbClient = typeof db | PgTransaction<any, any, any>;
-
-type OtpType = (typeof otpTypeEnum.enumValues)[number];
 export async function createAndSendOtp(
   userId: string,
   name: string,
@@ -24,6 +21,7 @@ export async function createAndSendOtp(
       expiresAt: new Date(Date.now() - 1000),
     })
     .where(and(eq(otps.userId, userId), sql`used_at IS NULL`));
+
   const otpCode = generateOtp();
   const otpHash = await hash(otpCode);
 

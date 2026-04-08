@@ -13,8 +13,8 @@ export type ValidatorFn = (value: any) => ValidationResult;
 export type ValidationSchema = Record<string, ValidatorFn[]>;
 
 export interface FieldsValidationResult {
-    valid: boolean;
-    errors: Record<string, string>;
+  valid: boolean;
+  errors: Record<string, string>;
 }
 
 // ─── Core Helper ─────────────────────────────────────────────────────────────
@@ -43,25 +43,25 @@ export interface FieldsValidationResult {
  * ```
  */
 export const validateFields = (
-    data: Record<string, any>,
-    schema: ValidationSchema,
+  data: Record<string, any>,
+  schema: ValidationSchema,
 ): FieldsValidationResult => {
-    const errors: Record<string, string> = {};
+  const errors: Record<string, string> = {};
 
-    for (const [field, validators] of Object.entries(schema)) {
-        const value = data[field];
+  for (const [field, validators] of Object.entries(schema)) {
+    const value = data[field];
 
-        for (const validator of validators) {
-            const result = validator(value);
-            if (!result.valid) {
-                errors[field] = result.message ?? `${field} is invalid`;
-                break; // stop at first error per field
-            }
-        }
+    for (const validator of validators) {
+      const result = validator(value);
+      if (!result.valid) {
+        errors[field] = result.message ?? `${field} is invalid`;
+        break; // stop at first error per field
+      }
     }
+  }
 
-    return {
-        valid: Object.keys(errors).length === 0,
-        errors,
-    };
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+  };
 };

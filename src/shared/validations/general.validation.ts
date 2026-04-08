@@ -1,9 +1,4 @@
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-export interface ValidationResult {
-  valid: boolean;
-  message?: string;
-}
+import { ValidationResult } from '../types/validations/general';
 
 // ─── Generic Validators ──────────────────────────────────────────────────────
 
@@ -11,7 +6,11 @@ export const validateRequired = (
   value: unknown,
   fieldName = 'Field',
 ): ValidationResult => {
-  if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+  if (
+    value === null ||
+    value === undefined ||
+    (typeof value === 'string' && value.trim() === '')
+  ) {
     return { valid: false, message: `${fieldName} is required` };
   }
   return { valid: true };

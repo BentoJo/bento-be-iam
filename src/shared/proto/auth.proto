@@ -5,6 +5,7 @@ package auth;
 service AuthService {
     rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
     rpc Register (RegisterRequest) returns (RegisterResponse);
+    rpc Login (LoginRequest) returns (LoginResponse);
 }
 
 message HealthCheckRequest {}
@@ -23,4 +24,17 @@ message RegisterResponse {
     string user_id = 1;
     string email = 2;
     string auth_status = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string device_id = 2;
+  string device_name = 3;
+  string user_agent = 4;
+  string ip_address = 5;
+}
+
+message LoginResponse {
+    bool success = 1;
+    string message = 2;
 }

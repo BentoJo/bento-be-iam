@@ -7,20 +7,10 @@ import db from '../../../shared/configs/db.config';
 import { users } from '../../../shared/db/schema';
 import { validateRequired, validateEmail } from '../../../shared/validations';
 import { createAndSendOtp } from '../../../shared/utils/send-otp';
-
-// Types
-
-export interface RegisterRequest {
-  email: string;
-  firstName: string;
-  lastName: string;
-}
-
-export interface RegisterResponse {
-  user_id: string;
-  email: string;
-  auth_status: string;
-}
+import {
+  RegisterRequest,
+  RegisterResponse,
+} from '../../../shared/types/auth/register';
 
 //  Service
 
@@ -97,33 +87,5 @@ export class RegisterService {
         message: emailResult.message,
       });
     }
-  }
-
-  private handleExistingUser(
-    user: typeof users.$inferSelect,
-  ): RegisterResponse {
-    // Soft-deleted user
-    if (user.deletedAt !== null) {
-      throw new RpcException({
-        code: GrpcStatus.FAILED_PRECONDITION,
-        message: 'USER_SOFT_DELETED',
-      });
-    }
-
-    // Already verified: cannot re-register
-    if (user.authStatus === 'verified') {
-      throw new RpcException({
-        code: GrpcStatus.ALREADY_EXISTS,
-        message: 'USER_ALREADY_EXISTS',
-      });
-    }
-
-    // Not verified: reuse & resend OTP
-    // TODO: Trigger OTP resend (type = registration)
-    return {
-      user_id: user.id,
-      email: user.email,
-      auth_status: user.authStatus!,
-    };
   }
 }
