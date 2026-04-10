@@ -6,6 +6,13 @@ service AuthService {
     rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
     rpc Register (RegisterRequest) returns (RegisterResponse);
     rpc Login (LoginRequest) returns (LoginResponse);
+    rpc VerifyOTP (VerifyOTPRequest) returns (VerifyOTPResponse);
+}
+
+enum OTPType {
+    OTP_TYPE_UNSPECIFIED = 0;
+    LOGIN = 1;
+    REGISTRATION = 2;
 }
 
 message HealthCheckRequest {}
@@ -37,4 +44,47 @@ message LoginRequest {
 message LoginResponse {
     bool success = 1;
     string message = 2;
+}
+
+message VerifyOTPRequest {
+    string email = 1;
+    string code = 2;
+}
+
+message VerifyOTPResponse {
+    oneof result {
+        LoginOTPResponse login = 1;
+        RegisterOTPResponse register = 2;
+    }
+}
+  
+message LoginOTPResponse {
+    string access_token = 1;
+    string refresh_token = 2;
+    int64 access_token_expires_at = 3;
+    int64 refresh_token_expires_at = 4;
+  
+    UserInfo user = 5;
+    SessionInfo session = 6;
+}
+
+message UserInfo {
+    string id = 1;
+    string email = 2;
+    string first_name = 3;
+    string last_name = 4;
+    string avatar_url = 5;
+}
+  
+message SessionInfo {
+    string session_id = 1;
+    string device_id = 2;
+    bool is_new_device = 3;
+}
+
+
+message RegisterOTPResponse{
+    string verified = 1; 
+    string nextStep = 2;
+    string tempToken = 3;
 }

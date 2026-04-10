@@ -60,7 +60,7 @@ export class RegisterService {
       newUser.id,
       newUser.firstName + ' ' + newUser.lastName,
       newUser.email,
-      'registration',
+      'REGISTRATION',
     );
     return {
       user_id: newUser.id,

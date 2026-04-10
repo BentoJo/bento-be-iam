@@ -1,6 +1,7 @@
-import { ValidationResult } from './general.validation';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+import { ValidationResult } from "../types/validations/general";
 
 /**
  * A validator function that takes a value and returns a ValidationResult.
