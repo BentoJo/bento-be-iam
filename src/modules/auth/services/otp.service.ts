@@ -4,8 +4,7 @@ import { devices, otps, sessions, users } from '../../../shared/db/schema';
 import {
   ClientData,
   FingerprintComponents,
-  OtpType,
-} from '../../../shared/types/utils/otp';
+} from '../../../shared/types/auth/session';
 import db from '../../../shared/configs/db.config';
 import { hash } from '../../../shared/utils/hash';
 import jwt from 'jsonwebtoken';
