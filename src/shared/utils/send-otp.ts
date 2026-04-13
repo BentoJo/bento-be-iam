@@ -6,7 +6,7 @@ import { generateOtp } from './generate-otp';
 import { hash } from './hash';
 import { loginEmail } from './loginEmail';
 import { registerEmail } from './registrationEmail';
-import { OtpType } from '../types/utils/otp';
+import { OtpType } from '../types/auth/session';
 
 export async function createAndSendOtp(
   userId: string,

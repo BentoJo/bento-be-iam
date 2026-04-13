@@ -2,8 +2,8 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { HealthService } from './services/health.service';
 import { RegisterService } from './services/register.service';
-import { OtpService } from './services/otp.service';
-import { ClientData } from '../../shared/types/utils/otp';
+import { OtpService } from './services/verify-otp.service';
+import { ResendOtpService } from './services/resend-otp.service';
 
 @Controller()
 export class AuthController {
@@ -11,6 +11,7 @@ export class AuthController {
     private readonly healthService: HealthService,
     private readonly registerService: RegisterService,
     private readonly otpService: OtpService,
+    private readonly resendOTPService: ResendOtpService,
   ) {}
 
   @GrpcMethod('AuthService', 'HealthCheck')
@@ -26,5 +27,10 @@ export class AuthController {
   @GrpcMethod('AuthService', 'VerifyOTP')
   verifyOTP(data: { email: string; code: string }) {
     return this.otpService.verifyOtp(data);
+  }
+
+  @GrpcMethod('AuthService', 'ResendOTP')
+  resendOTP(data: { email: string }) {
+    return this.resendOTPService.resendOtp(data);
   }
 }
