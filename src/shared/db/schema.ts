@@ -131,8 +131,7 @@ export const sessions = pgTable(
     ipAddress: varchar('ip_address', { length: 45 }),
     revokedAt: timestamp('revoked_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-  },
-  (table) => ({
+  }, (table) => ({
     userIdIdx: index('sessions_user_id_idx').on(table.userId),
     deviceIdIdx: index('sessions_device_id_idx').on(table.deviceId),
   }),

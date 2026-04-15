@@ -8,6 +8,13 @@
       "when": 1775058188150,
       "tag": "0000_foamy_logan",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776076984574,
+      "tag": "0001_condemned_miek",
+      "breakpoints": true
     }
   ]
 }
