@@ -1,10 +1,15 @@
 export interface DeviceInfo {
   id: string;
+  userId: string;
+  deviceFingerprintHash: string;
   deviceName: string | null;
   firstSeenAt: Date;
   lastSeenAt: Date | null;
   isCurrent: boolean;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  revokedAt: Date | null;
 }
 
 export interface ClientData {
