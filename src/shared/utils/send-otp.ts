@@ -6,7 +6,7 @@ import { generateOtp } from './generate-otp';
 import { hash } from './hash';
 import { loginEmail } from './loginEmail';
 import { registerEmail } from './registrationEmail';
-import { OtpType } from '../types/utils/otp';
+import { OtpType } from '../types/auth/session';
 
 export async function createAndSendOtp(
   userId: string,
@@ -21,7 +21,6 @@ export async function createAndSendOtp(
       expiresAt: new Date(Date.now() - 1000),
     })
     .where(and(eq(otps.userId, userId), sql`used_at IS NULL`));
-
   const otpCode = generateOtp();
   const otpHash = await hash(otpCode);
 
@@ -35,12 +34,12 @@ export async function createAndSendOtp(
   let htmlContent = '';
   let subject = '';
 
-  if (type === 'login') {
+  if (type === 'LOGIN') {
     subject = 'Your Login OTP';
     htmlContent = loginEmail
       .replace('{{name}}', name)
       .replace('{{code}}', otpCode);
-  } else if (type === 'registration') {
+  } else if (type === 'REGISTRATION') {
     subject = 'Your New Verification OTP';
     htmlContent = registerEmail
       .replace('{{name}}', name)

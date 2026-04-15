@@ -9,6 +9,7 @@ import {
   pgEnum,
   index,
   unique,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 // --- Enums ---
@@ -23,7 +24,7 @@ export const globalRolesEnum = pgEnum('global_roles', [
   'admin',
   'user',
 ]);
-export const otpTypeEnum = pgEnum('otp_type', ['registration', 'login']);
+export const otpTypeEnum = pgEnum('otp_type', ['LOGIN', 'REGISTRATION']);
 
 // --- Tables ---
 
@@ -88,6 +89,13 @@ export const devices = pgTable(
       length: 255,
     }).notNull(),
     deviceName: varchar('device_name', { length: 255 }),
+    fingerprintComponents: jsonb('fingerprint_components').$type<{
+      deviceName: string;
+      platform: string;
+      hardwareConcurrency: number;
+      timezone?: string;
+      language?: string;
+    }>(),
     firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
     lastSeenAt: timestamp('last_seen_at'),
     revokedAt: timestamp('revoked_at'),
@@ -123,9 +131,7 @@ export const sessions = pgTable(
     ipAddress: varchar('ip_address', { length: 45 }),
     revokedAt: timestamp('revoked_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (table) => ({
+  }, (table) => ({
     userIdIdx: index('sessions_user_id_idx').on(table.userId),
     deviceIdIdx: index('sessions_device_id_idx').on(table.deviceId),
   }),
