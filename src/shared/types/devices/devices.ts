@@ -1,6 +1,5 @@
 export interface DeviceInfo {
   id: string;
-  userId: string;
   deviceFingerprintHash: string;
   deviceName: string | null;
   firstSeenAt: Date;
