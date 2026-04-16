@@ -234,7 +234,7 @@ export class SessionFunction {
     }
   }
 
-  private async countActiveSessions(
+ async countActiveSessions(
     userId: string,
     deviceId: string,
   ): Promise<number> {

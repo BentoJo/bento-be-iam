@@ -46,7 +46,7 @@ export class DeviceFunction {
     try {
       await db
         .update(devices)
-        .set({ revokedAt: null, updatedAt: new Date() })
+        .set({ revokedAt: null, lastSeenAt: new Date(), updatedAt: new Date() })
         .where(eq(devices.id, deviceId));
     } catch (error) {
       throw new Error(

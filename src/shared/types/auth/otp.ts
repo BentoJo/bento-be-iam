@@ -9,3 +9,19 @@ export interface OtpResendResponse {
   email: string;
   expiresIn: number;
 }
+
+export interface LoginOTPResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl: string | null;
+  };
+  session: {
+    sessionId: string;
+    deviceId: string;
+  };
+}

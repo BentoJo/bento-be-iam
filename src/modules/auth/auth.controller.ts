@@ -4,6 +4,7 @@ import { HealthService } from './services/health.service';
 import { RegisterService } from './services/register.service';
 import { OtpService } from './services/verify-otp.service';
 import { ResendOtpService } from './services/resend-otp.service';
+import { ClientData } from '../../shared/types/auth/session';
 
 @Controller()
 export class AuthController {
@@ -26,7 +27,21 @@ export class AuthController {
 
   @GrpcMethod('AuthService', 'VerifyOTP')
   verifyOTP(data: { email: string; code: string }) {
-    return this.otpService.verifyOtp(data);
+    const clientData: ClientData = {
+      deviceFingerprint: 'DEMO',
+      ipAddress: 'DEMO',
+      deviceInfo: 'DEMO',
+      location: 'DEMO',
+      deviceToken: 'DEMO',
+      fingerprintComponents: {
+        deviceName: 'DEMO',
+        hardwareConcurrency: 0,
+        platform: 'DEMO',
+        language: 'DEMO',
+        timezone: 'DEMO',
+      }, 
+    };
+    return this.otpService.verifyOtp(data, clientData);
   }
 
   @GrpcMethod('AuthService', 'ResendOTP')

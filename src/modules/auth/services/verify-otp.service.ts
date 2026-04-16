@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Session } from '@nestjs/common';
 import { eq, and, desc, isNull, sql } from 'drizzle-orm';
 import { devices, otps, sessions, users } from '../../../shared/db/schema';
 import {
@@ -18,16 +18,23 @@ import {
 import { randomBytes } from 'crypto';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
-import { RegisterOTPResponse } from '../../../shared/types/auth/otp';
+import {
+  LoginOTPResponse,
+  RegisterOTPResponse,
+} from '../../../shared/types/auth/otp';
+import { DeviceFunction } from '../../../shared/func/device';
+import { SessionFunction } from '../../../shared/func/session';
 
 @Injectable()
 export class OtpService {
-  async verifyOtp(data: {
-    email: string;
-    code: string;
-    clientData?: ClientData;
-  }): Promise<{
-    // login?: LoginOTPResponse;
+  async verifyOtp(
+    data: {
+      email: string;
+      code: string;
+    },
+    clientData: ClientData,
+  ): Promise<{
+    login?: LoginOTPResponse;
     register?: RegisterOTPResponse;
   }> {
     const { email, code } = data;
@@ -61,7 +68,7 @@ export class OtpService {
       );
       throw new RpcException({
         code: GrpcStatus.PERMISSION_DENIED,
-        message: 'ACCOUNT_LOCKED',
+        message: 'account locked. Try again in ' + remainingTime + ' minutes',
       });
     }
 
@@ -137,25 +144,21 @@ export class OtpService {
         message: 'ACCOUNT_BANNED',
       };
     }
-
-    // const userRolesList = await db
-    //   .select({ id: userRoles.roleId, role: roles.nameEn })
-    //   .from(userRoles)
-    //   .where(eq(userRoles.userId, userRecord.id))
-    //   .leftJoin(roles, eq(userRoles.roleId, roles.id));
-
-    // const rolesArray = userRolesList
-    //   .map((r) => r.role)
-    //   .filter(Boolean) as string[];
     switch (otpRecord.type) {
       case 'REGISTRATION':
         return {
-          register: await this.registerHandler(userRecord.id, userRecord.email),
+          register: (await this.registerHandler(
+            userRecord.id,
+            userRecord.email,
+          )) as RegisterOTPResponse,
         };
-      // case 'LOGIN':
-      //   await this.loginHandler(userRecord, clientData!);
-      //   case 'RECOVERY':
-      //     return await RecoveryHandler(userRecord.id);
+      case 'LOGIN':
+        return {
+          login: (await this.loginHandler(
+            userRecord,
+            clientData,
+          )) as LoginOTPResponse,
+        };
       //   case 'EMAIL_CHANGE_CURRENT':
       //     return await oldEmailHandler(
       //       userRecord.id,
@@ -197,166 +200,89 @@ export class OtpService {
   private async loginHandler(
     userRecord: typeof users.$inferSelect,
     clientData: ClientData,
-  ) {
+  ): Promise<LoginOTPResponse> {
     // 1. DEVICE LOGIC: Two-tier device identification
     //    Tier 1 (primary):  server-issued persistent device token (X-Device-Token header)
     //    Tier 2 (fallback): exact hash match, then fuzzy component match (merge when close)
     const fingerprint = clientData.deviceFingerprint || clientData.deviceInfo;
     const deviceHash = await hash(fingerprint);
 
-    let device: typeof devices.$inferSelect | undefined;
+    let device;
 
     // Tier 1: match by server-issued device token
+    let dev = new DeviceFunction();
     if (clientData.deviceToken) {
-      [device] = await db
-        .select()
-        .from(devices)
-        .where(
-          and(
-            eq(devices.userId, userRecord.id),
-            eq(devices.id, clientData.deviceToken),
-          ),
-        )
-        .limit(1);
+      device = await dev.findDeviceByToken(
+        userRecord.id,
+        clientData.deviceToken!,
+      );
     }
 
-    // Tier 2a: exact hash match (covers private/incognito and cross-browser when fingerprint unchanged)
     if (!device) {
-      [device] = await db
-        .select()
-        .from(devices)
-        .where(
-          and(
-            eq(devices.userId, userRecord.id),
-            eq(devices.deviceFingerprintHash, deviceHash),
-          ),
-        )
-        .limit(1);
+      device = await dev.findDeviceByHash(userRecord.id, deviceHash);
     }
 
     // Tier 2b: fuzzy match — hash differs but components are close (e.g. timezone/hw cap changed) → merge
     if (!device && clientData.fingerprintComponents) {
-      const userDevicesList = await db
-        .select()
-        .from(devices)
-        .where(
-          and(eq(devices.userId, userRecord.id), isNull(devices.revokedAt)),
-        );
-      const merged = userDevicesList.find((d) =>
-        this.fingerprintComponentsMatch(
-          d.fingerprintComponents,
-          clientData.fingerprintComponents!,
-        ),
-      );
-      if (merged) {
-        await db
-          .update(devices)
-          .set({
-            deviceFingerprintHash: deviceHash,
-            fingerprintComponents: clientData.fingerprintComponents,
-            lastSeenAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(devices.id, merged.id));
-        [device] = await db
-          .select()
-          .from(devices)
-          .where(eq(devices.id, merged.id))
-          .limit(1);
-      }
+      device = await dev.findDeviceByHash(userRecord.id, deviceHash);
     }
 
     if (!device) {
-      const userDevices = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(devices)
-        .where(
-          and(eq(devices.userId, userRecord.id), isNull(devices.revokedAt)),
-        );
-
-      if (userDevices[0].count >= MAX_DEVICES) {
-        throw {};
-      }
-
-      [device] = await db
-        .insert(devices)
-        .values({
-          userId: userRecord.id,
-          deviceFingerprintHash: deviceHash,
-          deviceName: clientData.deviceInfo,
-          fingerprintComponents: clientData.fingerprintComponents ?? undefined,
-          firstSeenAt: new Date(),
-          lastSeenAt: new Date(),
-        })
-        .returning();
-    } else if (device.revokedAt) {
-      // Device was revoked — check MAX_DEVICES before re-activating
-      const userDevices = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(devices)
-        .where(
-          and(eq(devices.userId, userRecord.id), isNull(devices.revokedAt)),
-        );
-
+      const userDevices = await dev.countActiveDevices(userRecord.id);
       if (userDevices[0].count >= MAX_DEVICES) {
         throw new RpcException({
-          code: GrpcStatus.PERMISSION_DENIED, //
+          code: GrpcStatus.PERMISSION_DENIED,
           message: 'DEVICE_LIMIT_REACHED',
         });
       }
-
+      device = await dev.registerDevice(userRecord.id, clientData!);
+    } else if (device.revokedAt) {
+      // Device was revoked — check MAX_DEVICES before re-activating
+      const userDevices = await dev.countActiveDevices(userRecord.id);
+      if (userDevices[0].count >= MAX_DEVICES) {
+        throw new RpcException({
+          code: GrpcStatus.PERMISSION_DENIED,
+          message: 'DEVICE_LIMIT_REACHED',
+        });
+      }
       // Re-activate the device
-      [device] = await db
-        .update(devices)
-        .set({ revokedAt: null, lastSeenAt: new Date(), updatedAt: new Date() })
-        .where(eq(devices.id, device.id))
-        .returning();
+      device = await dev.reactivateDevice(device.id);
     } else {
-      await db
-        .update(devices)
-        .set({ lastSeenAt: new Date() })
-        .where(eq(devices.id, device.id));
+      await dev.touchDevice(device.id);
     }
 
-    const activeSessions = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(sessions)
-      .where(
-        and(
-          eq(sessions.userId, userRecord.id),
-          eq(sessions.deviceId, device.id),
-          isNull(sessions.revokedAt),
-        ),
-      );
+    let session = new SessionFunction();
+
+    const activeSessions = await session.countActiveSessions(
+      userRecord.id,
+      device.id,
+    );
 
     if (activeSessions[0].count >= MAX_ACTIVE_SESSIONS) {
-      throw {};
+      throw new RpcException({
+        code: GrpcStatus.PERMISSION_DENIED,
+        message: 'SESSION_LIMIT_REACHED',
+      });
     }
 
     // 3. CREATE SESSION
     const refreshToken = randomBytes(40).toString('hex');
     const hashedRefreshToken = await hash(refreshToken);
 
-    // Issue #11: Set absolute session expiry (40 days)
-    const sessionExpiresAt = new Date();
-    sessionExpiresAt.setDate(
-      sessionExpiresAt.getDate() + SESSION_LIFETIME_DAYS,
-    );
-
-    const [newSession] = await db
-      .insert(sessions)
-      .values({
-        userId: userRecord.id,
-        deviceId: device.id,
-        ipAddress: clientData.ipAddress,
-        refreshTokenHash: hashedRefreshToken,
-        lastActivity: new Date(),
-      })
-      .returning();
+    const newSession = await session.createSession({
+      userId: userRecord.id,
+      deviceId: device.id,
+      ipAddress: clientData.ipAddress!,
+      refreshTokenHash: hashedRefreshToken,
+    });
 
     // 4. GENERATE TOKENS
     const accessToken = jwt.sign(
-      { sub: userRecord.id, sid: newSession.id, email: userRecord.email },
+      {
+        sub: userRecord.id,
+        sid: newSession.sessionId,
+        email: userRecord.email,
+      },
       process.env.JWT_ACCESS_SECRET!,
       { expiresIn: ACCESS_TOKEN_EXPIRY },
     );
@@ -364,18 +290,16 @@ export class OtpService {
     return {
       accessToken,
       refreshToken,
-      data: {
-        user: {
-          id: userRecord.id,
-          email: userRecord.email,
-          firstName: userRecord.firstName,
-          lastName: userRecord.lastName,
-          avatarUrl: userRecord.avatarUrl || null,
-        },
-        session: {
-          sessionId: newSession.id,
-          deviceId: device.id,
-        },
+      user: {
+        id: userRecord.id,
+        email: userRecord.email,
+        firstName: userRecord.firstName,
+        lastName: userRecord.lastName,
+        avatarUrl: userRecord.avatarUrl || null,
+      },
+      session: {
+        sessionId: newSession.sessionId,
+        deviceId: device.id,
       },
     };
   }
