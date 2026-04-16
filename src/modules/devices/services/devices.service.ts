@@ -25,7 +25,7 @@ export class DevicesService {
         lastSeenAt: device.lastSeenAt,
         isCurrent: currentDeviceId ? device.id === currentDeviceId : false,
         isActive: device.revokedAt === null,
-      }));
+      })) as DeviceInfo[];
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;

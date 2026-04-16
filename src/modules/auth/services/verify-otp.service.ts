@@ -14,7 +14,7 @@ import {
   MAX_DEVICES,
   MIN_SOFT_MATCHES_FOR_MERGE,
   SESSION_LIFETIME_DAYS,
-} from '../../../shared/types/constants/auth';
+} from '../../../shared/constants/auth';
 import { randomBytes } from 'crypto';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
