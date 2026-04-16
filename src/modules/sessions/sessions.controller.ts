@@ -16,9 +16,6 @@ export class SessionsController {
 
   @GrpcMethod('SessionsService', 'RevokeSession')
   revokeSession(data: { sessionId: string; userId: string }) {
-    return this.sessionsService.revokeSessionService(
-      data.sessionId,
-      data.userId,
-    );
+    return this.sessionsService.revokeSessionService(data.sessionId);
   }
 }

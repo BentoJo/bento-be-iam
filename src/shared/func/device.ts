@@ -8,7 +8,6 @@ import { ClientData, DeviceInfo } from '../types/devices/devices';
 export class DeviceFunction {
   async registerDevice(
     userId: string,
-    deviceId: string,
     deviceInfo: ClientData,
   ): Promise<DeviceInfo> {
     try {
@@ -89,10 +88,34 @@ export class DeviceFunction {
 
   async revokeDevice(deviceId: string): Promise<void> {
     try {
-      await db
+      const result = await db
         .update(devices)
         .set({ revokedAt: new Date() })
-        .where(and(eq(devices.id, deviceId), isNull(devices.revokedAt)));
+        .where(and(eq(devices.id, deviceId), isNull(devices.revokedAt)))
+        .returning({ id: devices.id });
+
+      if (result.length === 0) {
+        throw new Error('Device not found or already revoked');
+      }
+    } catch (error) {
+      throw new Error(
+        'Error revoking device: ' +
+          (error instanceof Error ? error.message : String(error)),
+      );
+    }
+  }
+
+  async revokeAllDevicesForUser(userId: string): Promise<void> {
+    try {
+      const result = await db
+        .update(devices)
+        .set({ revokedAt: new Date() })
+        .where(eq(devices.userId, userId))
+        .returning({ id: devices.id });
+
+      if (result.length === 0) {
+        throw new Error('Device not found or already revoked');
+      }
     } catch (error) {
       throw new Error(
         'Error revoking device: ' +

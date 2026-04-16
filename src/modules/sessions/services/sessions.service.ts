@@ -5,9 +5,12 @@ import { sessions } from '../../../shared/db/schema';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
+import { SessionFunction } from '../../../shared/func/session';
 
 @Injectable()
 export class SessionService {
+  constructor(private readonly serviceFunctions: SessionFunction) {}
+
   async listSessionsService(
     userId: string,
     currentSessionId: string,
@@ -37,26 +40,9 @@ export class SessionService {
     }
   }
 
-  async revokeSessionService(sessionId: string, userId: string): Promise<void> {
+  async revokeSessionService(sessionId: string): Promise<void> {
     try {
-      const result = await db
-        .update(sessions)
-        .set({ revokedAt: new Date() })
-        .where(
-          and(
-            eq(sessions.id, sessionId),
-            eq(sessions.userId, userId),
-            isNull(sessions.revokedAt),
-          ),
-        )
-        .returning({ id: sessions.id });
-
-      if (result.length === 0) {
-        throw new RpcException({
-          code: GrpcStatus.NOT_FOUND,
-          message: 'Session not found or already revoked',
-        });
-      }
+      await this.serviceFunctions.revokeSession(sessionId);
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;
