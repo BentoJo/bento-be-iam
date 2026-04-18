@@ -3,6 +3,7 @@ import db from '../configs/db.config';
 import { devices } from '../db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { ClientData, DeviceInfo } from '../types/devices/devices';
+import { MAX_DEVICES } from '../types/constants/auth';
 
 @Injectable()
 export class DeviceFunction {
@@ -12,7 +13,7 @@ export class DeviceFunction {
   ): Promise<DeviceInfo> {
     try {
       //Put From Const Folder here
-      if ((await this.countActiveDevices(userId)) >= 2) {
+      if ((await this.countActiveDevices(userId)) >= MAX_DEVICES) {
         throw new Error('Maximum number of devices reached for this user');
       }
 

@@ -8,6 +8,7 @@ import {
   CreateSessionResponse,
   SessionInfo,
 } from '../types/sessions/sessions';
+import { MAX_ACTIVE_SESSIONS } from '../types/constants/auth';
 
 @Injectable()
 export class SessionFunction {
@@ -23,7 +24,7 @@ export class SessionFunction {
         deviceId,
       );
 
-      if (activeSessionCount >= 2) {
+      if (activeSessionCount >= MAX_ACTIVE_SESSIONS) {
         throw new Error(
           'Maximum number of sessions reached for this user and device',
         );
