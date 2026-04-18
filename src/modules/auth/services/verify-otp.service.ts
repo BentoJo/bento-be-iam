@@ -21,23 +21,29 @@ import { status as GrpcStatus } from '@grpc/grpc-js';
 import {
   LoginOTPResponse,
   RegisterOTPResponse,
+  VerifyOtp,
 } from '../../../shared/types/auth/otp';
 import { DeviceFunction } from '../../../shared/func/device';
 import { SessionFunction } from '../../../shared/func/session';
+import {
+  validateEmail,
+  validateOTP,
+  validateRequired,
+} from '../../../shared/validations';
 
 @Injectable()
 export class OtpService {
   async verifyOtp(
-    data: {
-      email: string;
-      code: string;
-    },
+    data: VerifyOtp,
     clientData: ClientData,
   ): Promise<{
     login?: LoginOTPResponse;
     register?: RegisterOTPResponse;
   }> {
     const { email, code } = data;
+    // validate input
+    this.validateInput(data);
+
     const conditions = [eq(users.email, email)];
 
     const validate = await db
@@ -290,6 +296,8 @@ export class OtpService {
     return {
       accessToken,
       refreshToken,
+      accessTokenExpiresIn: ACCESS_TOKEN_EXPIRY,
+      refreshTokenExpiresIn: SESSION_LIFETIME_DAYS.toString() + 'd',
       user: {
         id: userRecord.id,
         email: userRecord.email,
@@ -302,6 +310,40 @@ export class OtpService {
         deviceId: device.id,
       },
     };
+  }
+
+  private validateInput({ email, code }: VerifyOtp): void {
+    const requiredResult = validateRequired(email, 'Email');
+    if (!requiredResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: requiredResult.message,
+      });
+    }
+
+    const emailResult = validateEmail(email);
+    if (!emailResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: emailResult.message,
+      });
+    }
+
+    const codeResult = validateRequired(code, 'OTP Code');
+    if (!codeResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: codeResult.message,
+      });
+    }
+
+    const codeFormatResult = validateOTP(code);
+    if (!codeFormatResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: codeFormatResult.message,
+      });
+    }
   }
 
   private async fingerprintComponentsMatch(

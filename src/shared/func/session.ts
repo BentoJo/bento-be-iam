@@ -37,6 +37,7 @@ export class SessionFunction {
           ipAddress,
           refreshTokenHash,
           lastActivity: new Date(),
+          expiresAt: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000), // 40 days
         })
         .returning({ id: sessions.id });
 

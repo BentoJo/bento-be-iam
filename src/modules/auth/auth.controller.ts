@@ -39,7 +39,7 @@ export class AuthController {
         platform: 'DEMO',
         language: 'DEMO',
         timezone: 'DEMO',
-      }, 
+      },
     };
     return this.otpService.verifyOtp(data, clientData);
   }

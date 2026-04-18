@@ -208,3 +208,14 @@ export const validateDeviceID = (deviceId: string): ValidationResult => {
   }
   return { valid: true };
 };
+
+export const validateOTP = (otp: string): ValidationResult => {
+  if (typeof otp !== 'string') {
+    return { valid: false, message: 'OTP must be a string' };
+  }
+  const otpRegex = /^\d{6}$/;
+  if (!otpRegex.test(otp)) {
+    return { valid: false, message: 'OTP must be a 6-digit number' };
+  }
+  return { valid: true };
+};
