@@ -11,6 +11,7 @@ export interface SessionInfo extends SessionListResponse {
   deviceId: string;
   refreshTokenHash: string;
   revokedAt: Date | null;
+  expiresAt: Date;
 }
 
 export interface CreateSessionRequest {

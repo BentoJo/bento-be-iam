@@ -63,9 +63,9 @@ export class RegisterService {
       'REGISTRATION',
     );
     return {
-      user_id: newUser.id,
+      userId: newUser.id,
       email: newUser.email,
-      auth_status: newUser.authStatus!,
+      authStatus: newUser.authStatus!,
     };
   }
 

@@ -8,6 +8,8 @@ import {
   CreateSessionResponse,
   SessionInfo,
 } from '../types/sessions/sessions';
+import { RpcException } from '@nestjs/microservices';
+import { status as GrpcStatus } from '@grpc/grpc-js';
 
 @Injectable()
 export class SessionFunction {
@@ -184,6 +186,7 @@ export class SessionFunction {
         ipAddress: session.ipAddress,
         refreshTokenHash: session.refreshTokenHash,
         lastActivity: session.lastActivity,
+        expiresAt: session.expiresAt,
         isCurrent: deviceId ? session.deviceId === deviceId : false,
         revokedAt: session.revokedAt,
         createdAt: session.createdAt,
@@ -223,6 +226,7 @@ export class SessionFunction {
         ipAddress: session.ipAddress,
         refreshTokenHash: session.refreshTokenHash,
         lastActivity: session.lastActivity,
+        expiresAt: session.expiresAt,
         isCurrent: deviceId ? session.deviceId === deviceId : false,
         revokedAt: session.revokedAt,
         createdAt: session.createdAt,
@@ -235,10 +239,7 @@ export class SessionFunction {
     }
   }
 
- async countActiveSessions(
-    userId: string,
-    deviceId: string,
-  ): Promise<number> {
+  async countActiveSessions(userId: string, deviceId: string): Promise<number> {
     const activeSessions = await db
       .select({ id: sessions.id })
       .from(sessions)
@@ -253,7 +254,7 @@ export class SessionFunction {
     return activeSessions.length;
   }
 
-  private async findSessionByRefreshToken(
+  async findSessionByRefreshToken(
     hashedToken: string,
   ): Promise<SessionInfo | null> {
     const sessionRows = await db
@@ -280,9 +281,37 @@ export class SessionFunction {
       ipAddress: session.ipAddress,
       refreshTokenHash: session.refreshTokenHash,
       lastActivity: session.lastActivity,
+      expiresAt: session.expiresAt,
       isCurrent: false,
       revokedAt: session.revokedAt,
       createdAt: session.createdAt,
     };
+  }
+
+  async updateSessionRefreshToken(
+    sessionId: string,
+    newHashedToken: string,
+  ): Promise<void> {
+    try {
+      const updatedSession = await db
+        .update(sessions)
+        .set({ refreshTokenHash: newHashedToken, lastActivity: new Date() })
+        .where(and(eq(sessions.id, sessionId), isNull(sessions.revokedAt)))
+        .returning({ id: sessions.id });
+
+      if (updatedSession.length === 0) {
+        throw new RpcException({
+          code: GrpcStatus.UNAUTHENTICATED,
+          message: 'Session not found or already revoked',
+        });
+      }
+    } catch (error) {
+      throw new RpcException({
+        code: GrpcStatus.INTERNAL,
+        message:
+          'Error updating session refresh token: ' +
+          (error instanceof Error ? error.message : String(error)),
+      });
+    }
   }
 }

@@ -8,6 +8,7 @@ service AuthService {
     rpc Login (LoginRequest) returns (LoginResponse);
     rpc VerifyOTP (VerifyOTPRequest) returns (VerifyOTPResponse);
     rpc ResendOTP (OtpResendRequest) returns (OtpResendResponse);
+    rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
 }
 
 enum OTPType {
@@ -98,4 +99,16 @@ message OtpResendResponse {
     string method = 1;
     string email = 2;
     int64 expiresIn = 3;
+}
+
+message RefreshTokenRequest {
+    string refreshToken = 1;
+}
+
+message RefreshTokenResponse {
+    string accessToken = 1;
+    string refreshToken = 2;
+  
+    int64 accessTokenExpiresAt = 3;
+    int64 refreshTokenExpiresAt = 4;
 }

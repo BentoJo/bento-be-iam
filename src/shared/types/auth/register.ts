@@ -5,7 +5,7 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
-  user_id: string;
+  userId: string;
   email: string;
-  auth_status: string;
+  authStatus: string;
 }
