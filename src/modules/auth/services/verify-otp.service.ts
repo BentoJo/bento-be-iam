@@ -41,16 +41,14 @@ export class OtpService {
     register?: RegisterOTPResponse;
   }> {
     const { email, code } = data;
-    // validate input
-    this.validateInput(data);
 
-    const conditions = [eq(users.email, email)];
+    this.validateInput(data);
 
     const validate = await db
       .select()
       .from(otps)
       .innerJoin(users, eq(otps.userId, users.id))
-      .where(and(...conditions))
+      .where(eq(users.email, email))
       .orderBy(desc(otps.createdAt))
       .limit(1);
 
@@ -64,28 +62,29 @@ export class OtpService {
     const otpRecord = validate[0].otps;
     const userRecord = validate[0].users;
 
+    // VALIDATIONS (no DB writes)
     if (
       userRecord.lockedUntil &&
       new Date() < new Date(userRecord.lockedUntil)
     ) {
       const remainingTime = Math.ceil(
-        (new Date(userRecord.lockedUntil).getTime() - new Date().getTime()) /
-          60000,
+        (new Date(userRecord.lockedUntil).getTime() - Date.now()) / 60000,
       );
+
       throw new RpcException({
         code: GrpcStatus.PERMISSION_DENIED,
-        message: 'account locked. Try again in ' + remainingTime + ' minutes',
+        message: `account locked. Try again in ${remainingTime} minutes`,
       });
     }
 
-    if (otpRecord.usedAt !== null) {
+    if (otpRecord.usedAt) {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
         message: 'OTP_ALREADY_USED',
       });
     }
 
-    if (otpRecord.attempts && otpRecord.attempts >= 3) {
+    if ((otpRecord.attempts || 0) >= 3) {
       throw new RpcException({
         code: GrpcStatus.RESOURCE_EXHAUSTED,
         message: 'TOO_MANY_ATTEMPTS',
@@ -93,27 +92,22 @@ export class OtpService {
     }
 
     if (new Date() > otpRecord.expiresAt) {
-      throw {
+      throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
         message: 'OTP_EXPIRED',
-      };
+      });
     }
 
     const isValid = (await hash(code)) === otpRecord.code;
-
+    // WRONG OTP FLOW (TRANSACTION)
     if (!isValid) {
       const currentOtpAttempts = (otpRecord.attempts || 0) + 1;
       const totalUserFailedAttempts = (userRecord.failedAttempts || 0) + 1;
 
-      let lockoutUpdate = {};
-
-      if (totalUserFailedAttempts % 5 === 0) {
-        const lockoutMinutes = totalUserFailedAttempts * 2;
-        const lockoutDate = new Date();
-        lockoutDate.setMinutes(lockoutDate.getMinutes() + lockoutMinutes);
-
-        lockoutUpdate = { lockoutUntil: lockoutDate };
-      }
+      const lockoutUntil =
+        totalUserFailedAttempts % 5 === 0
+          ? new Date(Date.now() + totalUserFailedAttempts * 2 * 60 * 1000)
+          : null;
 
       await db.transaction(async (tx) => {
         await tx
@@ -123,33 +117,44 @@ export class OtpService {
 
         await tx
           .update(users)
-          .set({ failedAttempts: totalUserFailedAttempts, ...lockoutUpdate })
+          .set({
+            failedAttempts: totalUserFailedAttempts,
+            ...(lockoutUntil ? { lockedUntil: lockoutUntil } : {}),
+          })
           .where(eq(users.id, userRecord.id));
       });
 
-      throw {};
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: `INVALID_OTP. Attempt ${currentOtpAttempts}`,
+      });
     }
-
+    // SUCCESS FLOW (TRANSACTION)
     await db.transaction(async (tx) => {
       await tx
         .update(users)
-        .set({ failedAttempts: 0, lockedUntil: null })
+        .set({
+          failedAttempts: 0,
+          lockedUntil: null,
+        })
         .where(eq(users.id, userRecord.id));
 
       await tx
         .update(otps)
-        .set({ usedAt: new Date(), expiresAt: new Date(Date.now() - 1000) })
+        .set({
+          usedAt: new Date(),
+          expiresAt: new Date(Date.now() - 1000),
+        })
         .where(eq(otps.id, otpRecord.id));
     });
-
-    // Issue #2: Re-check user status before issuing tokens
-    const blockedStatuses = ['banned'];
-    if (blockedStatuses.includes(userRecord.authStatus!)) {
-      throw {
+    // BUSINESS CHECK
+    if (userRecord.authStatus === 'banned') {
+      throw new RpcException({
         code: GrpcStatus.PERMISSION_DENIED,
         message: 'ACCOUNT_BANNED',
-      };
+      });
     }
+    // RESPONSE
     switch (otpRecord.type) {
       case 'REGISTRATION':
         return {
@@ -158,6 +163,7 @@ export class OtpService {
             userRecord.email,
           )) as RegisterOTPResponse,
         };
+
       case 'LOGIN':
         return {
           login: (await this.loginHandler(
@@ -165,16 +171,7 @@ export class OtpService {
             clientData,
           )) as LoginOTPResponse,
         };
-      //   case 'EMAIL_CHANGE_CURRENT':
-      //     return await oldEmailHandler(
-      //       userRecord.id,
-      //       userRecord.email,
-      //       userRecord.firstName,
-      //       userRecord.lastName,
-      //       lang,
-      //     );
-      //   case 'EMAIL_CHANGE_NEW':
-      //     return newEmailHandler(userRecord, clientData, rolesArray, lang);
+
       default:
         throw new RpcException({
           code: GrpcStatus.INVALID_ARGUMENT,
