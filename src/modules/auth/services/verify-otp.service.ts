@@ -33,6 +33,10 @@ import {
 
 @Injectable()
 export class OtpService {
+  constructor(
+    private readonly sessionFun: SessionFunction,
+    private readonly deviceFun: DeviceFunction,
+  ) {}
   async verifyOtp(
     data: VerifyOtp,
     clientData: ClientData,
@@ -213,35 +217,38 @@ export class OtpService {
     let device;
 
     // Tier 1: match by server-issued device token
-    let dev = new DeviceFunction();
     if (clientData.deviceToken) {
-      device = await dev.findDeviceByToken(
+      device = await this.deviceFun.findDeviceByToken(
         userRecord.id,
         clientData.deviceToken!,
       );
     }
 
     if (!device) {
-      device = await dev.findDeviceByHash(userRecord.id, deviceHash);
+      device = await this.deviceFun.findDeviceByHash(userRecord.id, deviceHash);
     }
 
     // Tier 2b: fuzzy match — hash differs but components are close (e.g. timezone/hw cap changed) → merge
     if (!device && clientData.fingerprintComponents) {
-      device = await dev.findDeviceByHash(userRecord.id, deviceHash);
+      device = await this.deviceFun.findDeviceByHash(userRecord.id, deviceHash);
     }
 
     if (!device) {
-      const userDevices = await dev.countActiveDevices(userRecord.id);
+      const userDevices = await this.deviceFun.countActiveDevices(
+        userRecord.id,
+      );
       if (userDevices[0].count >= MAX_DEVICES) {
         throw new RpcException({
           code: GrpcStatus.PERMISSION_DENIED,
           message: 'DEVICE_LIMIT_REACHED',
         });
       }
-      device = await dev.registerDevice(userRecord.id, clientData!);
+      device = await this.deviceFun.registerDevice(userRecord.id, clientData!);
     } else if (device.revokedAt) {
       // Device was revoked — check MAX_DEVICES before re-activating
-      const userDevices = await dev.countActiveDevices(userRecord.id);
+      const userDevices = await this.deviceFun.countActiveDevices(
+        userRecord.id,
+      );
       if (userDevices[0].count >= MAX_DEVICES) {
         throw new RpcException({
           code: GrpcStatus.PERMISSION_DENIED,
@@ -249,14 +256,12 @@ export class OtpService {
         });
       }
       // Re-activate the device
-      device = await dev.reactivateDevice(device.id);
+      device = await this.deviceFun.reactivateDevice(device.id);
     } else {
-      await dev.touchDevice(device.id);
+      await this.deviceFun.touchDevice(device.id);
     }
 
-    let session = new SessionFunction();
-
-    const activeSessions = await session.countActiveSessions(
+    const activeSessions = await this.sessionFun.countActiveSessions(
       userRecord.id,
       device.id,
     );
@@ -272,7 +277,7 @@ export class OtpService {
     const refreshToken = randomBytes(40).toString('hex');
     const hashedRefreshToken = await hash(refreshToken);
 
-    const newSession = await session.createSession({
+    const newSession = await this.sessionFun.createSession({
       userId: userRecord.id,
       deviceId: device.id,
       ipAddress: clientData.ipAddress!,

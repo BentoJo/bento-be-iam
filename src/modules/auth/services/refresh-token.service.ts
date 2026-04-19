@@ -16,16 +16,19 @@ import { randomBytes } from 'crypto';
 
 @Injectable()
 export class RefreshTokenService {
+  constructor(
+    private readonly sessionFun: SessionFunction,
+    private readonly userFun: UserFunction,
+  ) {}
   async refreshToken(data: RefreshTokenRequest): Promise<RefreshTokenResponse> {
-    let sessionFun = new SessionFunction();
-    let userFun = new UserFunction();
     const { refreshToken } = data;
     // Validation
     this.validateInput(refreshToken);
     // Hash the refresh token to compare with stored hash
     const refreshHashed = await hash(refreshToken);
     // Find session by hashed refresh token
-    const session = await sessionFun.findSessionByRefreshToken(refreshHashed);
+    const session =
+      await this.sessionFun.findSessionByRefreshToken(refreshHashed);
     // If session not found or refresh token is invalid
     if (!session) {
       throw new RpcException({
@@ -35,17 +38,19 @@ export class RefreshTokenService {
     }
     // Check if session is expired
     if (session.expiresAt && new Date() > new Date(session.expiresAt)) {
-      sessionFun.revokeSession(session.id);
+      this.sessionFun.revokeSession(session.id);
       throw new RpcException({
         code: GrpcStatus.UNAUTHENTICATED,
         message: 'this sesstion is expired',
       });
     }
     // Find user by session userId
-    const userRecord = (await userFun.findUserById(session.userId)) as UserInfo;
+    const userRecord = (await this.userFun.findUserById(
+      session.userId,
+    )) as UserInfo;
     // Check if user is banned
     if (userRecord.authStatus === 'banned') {
-      sessionFun.revokeSession(session.id);
+      this.sessionFun.revokeSession(session.id);
       throw new RpcException({
         code: GrpcStatus.PERMISSION_DENIED,
         message:
@@ -66,7 +71,10 @@ export class RefreshTokenService {
     const newRefreshToken = randomBytes(40).toString('hex');
     const newRefreshTokenHash = await hash(newRefreshToken);
     // Update session with new refresh token hash and last activity
-    await sessionFun.updateSessionRefreshToken(session.id, newRefreshTokenHash);
+    await this.sessionFun.updateSessionRefreshToken(
+      session.id,
+      newRefreshTokenHash,
+    );
     // Calculate remaining time for the session to set refresh token expiry
     const remainingTime = session.expiresAt.getTime() - new Date().getTime();
     const remainingDays = remainingTime / (1000 * 60 * 60 * 24);
@@ -78,7 +86,7 @@ export class RefreshTokenService {
       refreshTokenExpiresAt: remainingDays.toString() + 'd',
     };
   }
-  
+
   private validateInput(refreshToken: string): void {
     const requiredResult = validateRequired(refreshToken, 'Refresh Token');
     if (!requiredResult.valid) {
