@@ -30,9 +30,9 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-    string user_id = 1;
+    string userId = 1;
     string email = 2;
-    string auth_status = 3;
+    string authStatus = 3;
 }
 
 message LoginRequest {
@@ -61,10 +61,10 @@ message VerifyOTPResponse {
 }
   
 message LoginOTPResponse {
-    string access_token = 1;
-    string refresh_token = 2;
-    int64 access_token_expires_at = 3;
-    int64 refresh_token_expires_at = 4;
+    string accessToken = 1;
+    string refreshToken = 2;
+    int64 accessTokenExpiresAt = 3;
+    int64 refreshTokenExpiresAt = 4;
   
     UserInfo user = 5;
     SessionInfo session = 6;
@@ -73,15 +73,15 @@ message LoginOTPResponse {
 message UserInfo {
     string id = 1;
     string email = 2;
-    string first_name = 3;
-    string last_name = 4;
-    string avatar_url = 5;
+    string firstName = 3;
+    string lastName = 4;
+    string avatarUrl = 5;
 }
   
 message SessionInfo {
-    string session_id = 1;
-    string device_id = 2;
-    bool is_new_device = 3;
+    string sessionId = 1;
+    string deviceId = 2;
+    bool isNewDevice = 3;
 }
 
 
