@@ -9,3 +9,5 @@ export const MAX_DEVICES = 2;
 export const MAX_ACTIVE_SESSIONS = 2;
 
 export const SESSION_LIFETIME_DAYS = 40;
+
+export const REFRESH_TOKEN_EXPIRY = '40d';

@@ -7,13 +7,14 @@ import { hash } from './hash';
 import { loginEmail } from './loginEmail';
 import { registerEmail } from './registrationEmail';
 import { OtpType } from '../types/auth/session';
+import { OtpResendResponse } from '../types/auth/otp';
 
 export async function createAndSendOtp(
   userId: string,
   name: string,
   email: string,
   type: OtpType,
-) {
+): Promise<OtpResendResponse> {
   await db
     .update(otps)
     .set({
@@ -48,5 +49,5 @@ export async function createAndSendOtp(
 
   await sendEmail(email, subject, htmlContent).catch(console.error);
 
-  return { method: 'EMAIL', email: email, expiresIn: 600 };
+  return { method: 'EMAIL', email: email, expiresIn: '10 minutes' };
 }

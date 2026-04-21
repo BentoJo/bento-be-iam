@@ -3,32 +3,30 @@ export interface VerifyOtp {
   code: string;
 }
 
-export interface RegisterOTPResponse {
-  verified: boolean;
-  nextStep: 'complete_profile';
-  tempToken: string;
-}
-
 export interface OtpResendResponse {
-  method: 'EMAIL';
+  method: string;
   email: string;
-  expiresIn: number;
+  expiresIn: string;
 }
 
-export interface LoginOTPResponse {
+export interface VerifyOtpResponse {
   accessToken: string;
   refreshToken: string;
-  accessTokenExpiresIn: string;
-  refreshTokenExpiresIn: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    avatarUrl: string | null;
-  };
-  session: {
-    sessionId: string;
-    deviceId: string;
-  };
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
+  user: UserInfo;
+  session: SessionInfo;
+}
+
+export interface UserInfo {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+}
+
+export interface SessionInfo {
+  sessionId: string;
+  deviceId: string;
 }

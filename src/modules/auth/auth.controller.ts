@@ -7,6 +7,12 @@ import { ResendOtpService } from './services/resend-otp.service';
 import { ClientData } from '../../shared/types/auth/session';
 import { LoginService } from './services/login.service';
 import { RefreshTokenService } from './services/refresh-token.service';
+import { LoginResponse } from '../../shared/types/auth/login';
+import {
+  OtpResendResponse,
+  VerifyOtpResponse,
+} from '../../shared/types/auth/otp';
+import { RefreshTokenResponse } from '../../shared/types/auth/refresh-token';
 
 @Controller()
 export class AuthController {
@@ -26,12 +32,12 @@ export class AuthController {
 
   @GrpcMethod('AuthService', 'Register')
   register(data: { email: string; firstName: string; lastName: string }) {
-    return this.registerService.register(data);
+    return this.registerService.register(data) as Promise<LoginResponse>;
   }
 
   @GrpcMethod('AuthService', 'Login')
   login(data: { email: string }) {
-    return this.loginService.login(data);
+    return this.loginService.login(data) as Promise<LoginResponse>;
   }
 
   @GrpcMethod('AuthService', 'VerifyOTP')
@@ -50,16 +56,21 @@ export class AuthController {
         timezone: 'DEMO',
       },
     };
-    return this.otpService.verifyOtp(data, clientData);
+    return this.otpService.verifyOtp(
+      data,
+      clientData,
+    ) as Promise<VerifyOtpResponse>;
   }
 
   @GrpcMethod('AuthService', 'ResendOTP')
   resendOTP(data: { email: string }) {
-    return this.resendOTPService.resendOtp(data);
+    return this.resendOTPService.resendOtp(data) as Promise<OtpResendResponse>;
   }
 
   @GrpcMethod('AuthService', 'RefreshToken')
   refreshToken(data: { refreshToken: string }) {
-    return this.refreshTokenService.refreshToken(data);
+    return this.refreshTokenService.refreshToken(
+      data,
+    ) as Promise<RefreshTokenResponse>;
   }
 }

@@ -6,6 +6,9 @@ import { OtpService } from './services/verify-otp.service';
 import { ResendOtpService } from './services/resend-otp.service';
 import { LoginService } from './services/login.service';
 import { RefreshTokenService } from './services/refresh-token.service';
+import { SessionFunction } from '../../shared/func/session';
+import { DeviceFunction } from '../../shared/func/device';
+import { UserFunction } from '../../shared/func/users';
 
 @Module({
   controllers: [AuthController],
@@ -16,6 +19,9 @@ import { RefreshTokenService } from './services/refresh-token.service';
     OtpService,
     ResendOtpService,
     RefreshTokenService,
+    SessionFunction,
+    DeviceFunction,
+    UserFunction,
   ],
 })
 export class AuthModule {}

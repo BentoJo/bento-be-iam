@@ -11,12 +11,13 @@ import {
   RegisterRequest,
   RegisterResponse,
 } from '../../../shared/types/auth/register';
+import { LoginResponse } from '../../../shared/types/auth/login';
 
 //  Service
 
 @Injectable()
 export class RegisterService {
-  async register(data: RegisterRequest): Promise<RegisterResponse> {
+  async register(data: RegisterRequest): Promise<LoginResponse> {
     const { email, firstName, lastName } = data;
 
     // Validate
@@ -63,9 +64,8 @@ export class RegisterService {
       'REGISTRATION',
     );
     return {
-      userId: newUser.id,
-      email: newUser.email,
-      authStatus: newUser.authStatus!,
+      success: true,
+      message: 'OTP sent successfully',
     };
   }
 

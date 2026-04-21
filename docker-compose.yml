@@ -17,6 +17,7 @@ services:
     container_name: iam-service
     restart: always
     ports:
+      - "3000:3000"
       - "50052:50052"
     env_file:
       - .env

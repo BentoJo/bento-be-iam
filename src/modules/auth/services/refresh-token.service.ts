@@ -10,9 +10,12 @@ import { hash } from '../../../shared/utils/hash';
 import { SessionFunction } from '../../../shared/func/session';
 import { UserFunction } from '../../../shared/func/users';
 import { UserInfo } from '../../../shared/types/users/users';
-import jwt from 'jsonwebtoken';
-import { ACCESS_TOKEN_EXPIRY } from '../../../shared/constants/auth';
+import { signAccessToken } from '../../../shared/utils/jwt';
 import { randomBytes } from 'crypto';
+import {
+  ACCESS_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY,
+} from '../../../shared/constants/auth';
 
 @Injectable()
 export class RefreshTokenService {
@@ -58,15 +61,11 @@ export class RefreshTokenService {
       });
     }
     // Generate new access token
-    const accessToken = jwt.sign(
-      {
-        sub: session.userId,
-        sid: session.id,
-        email: userRecord.email,
-      },
-      process.env.JWT_ACCESS_SECRET!,
-      { expiresIn: ACCESS_TOKEN_EXPIRY },
-    );
+    const accessToken = signAccessToken({
+      sub: session.userId,
+      deviceId: session.deviceId,
+      globalRole: userRecord.globalRole || 'user',
+    });
     // Generate new refresh token and hash it
     const newRefreshToken = randomBytes(40).toString('hex');
     const newRefreshTokenHash = await hash(newRefreshToken);
@@ -83,7 +82,7 @@ export class RefreshTokenService {
       accessToken: accessToken,
       refreshToken: newRefreshToken,
       accessTokenExpiresAt: ACCESS_TOKEN_EXPIRY,
-      refreshTokenExpiresAt: remainingDays.toString() + 'd',
+      refreshTokenExpiresAt: REFRESH_TOKEN_EXPIRY,
     };
   }
 

@@ -43,6 +43,7 @@ export class ResendOtpService {
     }
 
     if (Date.now() - new Date(lastOtp.createdAt).getTime() < 60000) {
+      // 1 minute cooldown
       throw new RpcException({
         code: GrpcStatus.RESOURCE_EXHAUSTED,
         message: 'OTP_RESEND_TOO_SOON',

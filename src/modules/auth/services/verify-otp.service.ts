@@ -1,13 +1,13 @@
-import { Injectable, Session } from '@nestjs/common';
-import { eq, and, desc, isNull, sql } from 'drizzle-orm';
-import { devices, otps, sessions, users } from '../../../shared/db/schema';
+import { Injectable } from '@nestjs/common';
+import { eq, desc } from 'drizzle-orm';
+import { otps, users } from '../../../shared/db/schema';
 import {
   ClientData,
   FingerprintComponents,
 } from '../../../shared/types/auth/session';
 import db from '../../../shared/configs/db.config';
 import { hash } from '../../../shared/utils/hash';
-import jwt from 'jsonwebtoken';
+import { signAccessToken } from '../../../shared/utils/jwt';
 import {
   ACCESS_TOKEN_EXPIRY,
   MAX_ACTIVE_SESSIONS,
@@ -18,11 +18,7 @@ import {
 import { randomBytes } from 'crypto';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
-import {
-  LoginOTPResponse,
-  RegisterOTPResponse,
-  VerifyOtp,
-} from '../../../shared/types/auth/otp';
+import { VerifyOtpResponse, VerifyOtp } from '../../../shared/types/auth/otp';
 import { DeviceFunction } from '../../../shared/func/device';
 import { SessionFunction } from '../../../shared/func/session';
 import {
@@ -40,10 +36,7 @@ export class OtpService {
   async verifyOtp(
     data: VerifyOtp,
     clientData: ClientData,
-  ): Promise<{
-    login?: LoginOTPResponse;
-    register?: RegisterOTPResponse;
-  }> {
+  ): Promise<VerifyOtpResponse> {
     const { email, code } = data;
 
     this.validateInput(data);
@@ -161,20 +154,15 @@ export class OtpService {
     // RESPONSE
     switch (otpRecord.type) {
       case 'REGISTRATION':
-        return {
-          register: (await this.registerHandler(
-            userRecord.id,
-            userRecord.email,
-          )) as RegisterOTPResponse,
-        };
-
+        return (await this.registerHandler(
+          userRecord,
+          clientData,
+        )) as VerifyOtpResponse;
       case 'LOGIN':
-        return {
-          login: (await this.loginHandler(
-            userRecord,
-            clientData,
-          )) as LoginOTPResponse,
-        };
+        return (await this.loginHandler(
+          userRecord,
+          clientData,
+        )) as VerifyOtpResponse;
 
       default:
         throw new RpcException({
@@ -185,29 +173,61 @@ export class OtpService {
   }
 
   private async registerHandler(
-    userId: string,
-    email: string,
-  ): Promise<RegisterOTPResponse> {
+    userRecord: typeof users.$inferSelect,
+    clientData: ClientData,
+  ): Promise<VerifyOtpResponse> {
     await db
       .update(users)
       .set({ authStatus: 'verified' })
-      .where(eq(users.id, userId));
-    const tempToken = jwt.sign(
-      {
-        email: email,
-        sub: userId,
-        purpose: 'profile_completion',
-      },
-      process.env.JWT_TEMP_SECRET!,
-      { expiresIn: ACCESS_TOKEN_EXPIRY },
+      .where(eq(users.id, userRecord.id));
+
+    const fingerprint = clientData.deviceFingerprint || clientData.deviceInfo;
+    const deviceHash = await hash(fingerprint);
+
+    const device = await this.deviceFun.registerDevice(
+      userRecord.id,
+      clientData!,
     );
-    return { verified: true, nextStep: 'complete_profile', tempToken };
+
+    const refreshToken = randomBytes(40).toString('hex');
+    const hashedRefreshToken = await hash(refreshToken);
+
+    const newSession = await this.sessionFun.createSession({
+      userId: userRecord.id,
+      deviceId: device.id,
+      ipAddress: clientData.ipAddress!,
+      refreshTokenHash: hashedRefreshToken,
+    });
+
+    const accessToken = signAccessToken({
+      sub: userRecord.id,
+      deviceId: device.id,
+      globalRole: userRecord.globalRole || 'user',
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+      accessTokenExpiresAt: ACCESS_TOKEN_EXPIRY as string,
+      refreshTokenExpiresAt: `${SESSION_LIFETIME_DAYS}d`,
+      user: {
+        id: userRecord.id,
+        email: userRecord.email,
+        firstName: userRecord.firstName,
+        lastName: userRecord.lastName,
+        avatarUrl: userRecord.avatarUrl ?? '',
+      },
+      session: {
+        sessionId: newSession.sessionId,
+        deviceId: device.id,
+      },
+    };
   }
 
   private async loginHandler(
     userRecord: typeof users.$inferSelect,
     clientData: ClientData,
-  ): Promise<LoginOTPResponse> {
+  ): Promise<VerifyOtpResponse> {
     // 1. DEVICE LOGIC: Two-tier device identification
     //    Tier 1 (primary):  server-issued persistent device token (X-Device-Token header)
     //    Tier 2 (fallback): exact hash match, then fuzzy component match (merge when close)
@@ -285,27 +305,23 @@ export class OtpService {
     });
 
     // 4. GENERATE TOKENS
-    const accessToken = jwt.sign(
-      {
-        sub: userRecord.id,
-        sid: newSession.sessionId,
-        email: userRecord.email,
-      },
-      process.env.JWT_ACCESS_SECRET!,
-      { expiresIn: ACCESS_TOKEN_EXPIRY },
-    );
+    const accessToken = signAccessToken({
+      sub: userRecord.id,
+      deviceId: device.id,
+      globalRole: userRecord.globalRole || 'user',
+    });
 
     return {
       accessToken,
       refreshToken,
-      accessTokenExpiresIn: ACCESS_TOKEN_EXPIRY,
-      refreshTokenExpiresIn: SESSION_LIFETIME_DAYS.toString() + 'd',
+      accessTokenExpiresAt: ACCESS_TOKEN_EXPIRY,
+      refreshTokenExpiresAt: SESSION_LIFETIME_DAYS.toString() + 'd',
       user: {
         id: userRecord.id,
         email: userRecord.email,
         firstName: userRecord.firstName,
         lastName: userRecord.lastName,
-        avatarUrl: userRecord.avatarUrl || null,
+        avatarUrl: userRecord.avatarUrl ?? '',
       },
       session: {
         sessionId: newSession.sessionId,

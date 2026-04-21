@@ -4,7 +4,7 @@ package auth;
 
 service AuthService {
     rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
-    rpc Register (RegisterRequest) returns (RegisterResponse);
+    rpc Register (RegisterRequest) returns (LoginResponse);
     rpc Login (LoginRequest) returns (LoginResponse);
     rpc VerifyOTP (VerifyOTPRequest) returns (VerifyOTPResponse);
     rpc ResendOTP (OtpResendRequest) returns (OtpResendResponse);
@@ -53,18 +53,12 @@ message VerifyOTPRequest {
     string code = 2;
 }
 
-message VerifyOTPResponse {
-    oneof result {
-        LoginOTPResponse login = 1;
-        RegisterOTPResponse register = 2;
-    }
-}
   
-message LoginOTPResponse {
+message VerifyOTPResponse {
     string accessToken = 1;
     string refreshToken = 2;
-    int64 accessTokenExpiresAt = 3;
-    int64 refreshTokenExpiresAt = 4;
+    string accessTokenExpiresAt = 3;
+    string refreshTokenExpiresAt = 4;
   
     UserInfo user = 5;
     SessionInfo session = 6;
@@ -81,7 +75,6 @@ message UserInfo {
 message SessionInfo {
     string sessionId = 1;
     string deviceId = 2;
-    bool isNewDevice = 3;
 }
 
 
@@ -109,6 +102,6 @@ message RefreshTokenResponse {
     string accessToken = 1;
     string refreshToken = 2;
   
-    int64 accessTokenExpiresAt = 3;
-    int64 refreshTokenExpiresAt = 4;
+    string accessTokenExpiresAt = 3;
+    string refreshTokenExpiresAt = 4;
 }

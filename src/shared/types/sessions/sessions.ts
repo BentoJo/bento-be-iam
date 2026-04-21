@@ -24,3 +24,10 @@ export interface CreateSessionRequest {
 export interface CreateSessionResponse {
   sessionId: string;
 }
+
+// export interface CreateSessionResponse {
+//     session_id: string;
+//     user_id: string;
+//     device_id: string;
+//     created_at: string; // int64 → string
+// }
