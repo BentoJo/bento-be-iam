@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  iam-db:
+    image: postgres:18
+    container_name: iam-db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+  iam-service:
+    build:
+      context: .
+      target: runner   
+    container_name: iam-service
+    restart: always
+    ports:
+      - "3000:3000"
+      - "50052:50052"
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:

@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService {
+    rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+    rpc Register (RegisterRequest) returns (LoginResponse);
+    rpc Login (LoginRequest) returns (LoginResponse);
+    rpc VerifyOTP (VerifyOTPRequest) returns (VerifyOTPResponse);
+    rpc ResendOTP (OtpResendRequest) returns (OtpResendResponse);
+    rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+}
+
+enum OTPType {
+    OTP_TYPE_UNSPECIFIED = 0;
+    LOGIN = 1;
+    REGISTRATION = 2;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+    string status = 1;
+}
+
+message RegisterRequest {
+    string email = 1;
+    string firstName = 2;
+    string lastName = 3;
+}
+
+message RegisterResponse {
+    string userId = 1;
+    string email = 2;
+    string authStatus = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string deviceId = 2;
+  string deviceName = 3;
+  string userAgent = 4;
+  string ipAddress = 5;
+}
+
+message LoginResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message VerifyOTPRequest {
+    string email = 1;
+    string code = 2;
+}
+
+  
+message VerifyOTPResponse {
+    string accessToken = 1;
+    string refreshToken = 2;
+    string accessTokenExpiresAt = 3;
+    string refreshTokenExpiresAt = 4;
+  
+    UserInfo user = 5;
+    SessionInfo session = 6;
+}
+
+message UserInfo {
+    string id = 1;
+    string email = 2;
+    string firstName = 3;
+    string lastName = 4;
+    string avatarUrl = 5;
+}
+  
+message SessionInfo {
+    string sessionId = 1;
+    string deviceId = 2;
+}
+
+
+message RegisterOTPResponse{
+    string verified = 1; 
+    string nextStep = 2;
+    string tempToken = 3;
+}
+
+message OtpResendRequest {
+    string email = 1;
+}
+
+message OtpResendResponse {
+    string method = 1;
+    string email = 2;
+    int64 expiresIn = 3;
+}
+
+message RefreshTokenRequest {
+    string refreshToken = 1;
+}
+
+message RefreshTokenResponse {
+    string accessToken = 1;
+    string refreshToken = 2;
+  
+    string accessTokenExpiresAt = 3;
+    string refreshTokenExpiresAt = 4;
+}

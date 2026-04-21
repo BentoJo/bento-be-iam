@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package device;
+
+service DeviceService {
+    rpc RegisterDevice (RegisterDeviceRequest) returns (RegisterDeviceResponse);
+    rpc GetDevice (GetDeviceRequest) returns (GetDeviceResponse);
+}
+
+message RegisterDeviceRequest {
+    string user_id = 1;
+    string device_name = 2;
+    string device_type = 3;
+}
+
+message RegisterDeviceResponse {
+    string device_id = 1;
+    string user_id = 2;
+    string device_name = 3;
+    string device_type = 4;
+    int64 registered_at = 5;
+}
+
+message GetDeviceRequest {
+    string device_id = 1;
+}
+
+message GetDeviceResponse {
+    string device_id = 1;
+    string user_id = 2;
+    string device_name = 3;
+    string device_type = 4;
+    int64 registered_at = 5;
+}
