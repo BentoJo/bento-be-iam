@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package auth;
 
+import "common.proto";
+
 service AuthService {
     rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
     rpc Register (RegisterRequest) returns (LoginResponse);
@@ -51,6 +53,7 @@ message LoginResponse {
 message VerifyOTPRequest {
     string email = 1;
     string code = 2;
+    common.ClientContext clientContext = 3;
 }
 
   
