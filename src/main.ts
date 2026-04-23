@@ -6,7 +6,7 @@ import { join } from 'path';
 
 async function bootstrap() {
   const grpcPort = process.env.GRPC_PORT || '50052';
-  const httpPort = process.env.HTTP_PORT || '3000';
+  const httpPort = process.env.HTTP_PORT || '5001';
 
   const app = await NestFactory.create(AppModule);
 
