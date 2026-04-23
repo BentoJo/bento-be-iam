@@ -46,6 +46,7 @@ export async function createAndSendOtp(
       .replace('{{name}}', name)
       .replace('{{code}}', otpCode);
   }
+  console.log('Registration OTP:', otpCode); // Log the OTP for testing purposes
 
   await sendEmail(email, subject, htmlContent).catch(console.error);
 
