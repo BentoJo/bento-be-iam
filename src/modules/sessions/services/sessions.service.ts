@@ -40,9 +40,12 @@ export class SessionService {
     }
   }
 
-  async revokeSessionService(sessionId: string): Promise<void> {
+  async revokeSessionService(
+    sessionId: string,
+    deviceId: string,
+  ): Promise<void> {
     try {
-      await this.serviceFunctions.revokeSession(sessionId);
+      await this.serviceFunctions.revokeSession(sessionId, deviceId);
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;

@@ -81,12 +81,18 @@ export class SessionFunction {
     }
   }
 
-  async revokeSession(sessionId: string): Promise<void> {
+  async revokeSession(sessionId: string, deviceId: string): Promise<void> {
     try {
       const revokedSession = await db
         .update(sessions)
         .set({ revokedAt: new Date() })
-        .where(and(eq(sessions.id, sessionId), isNull(sessions.revokedAt)))
+        .where(
+          and(
+            eq(sessions.id, sessionId),
+            eq(sessions.deviceId, deviceId),
+            isNull(sessions.revokedAt),
+          ),
+        )
         .returning({ id: sessions.id });
 
       if (revokedSession.length === 0) {
@@ -119,7 +125,10 @@ export class SessionFunction {
         return;
       }
 
-      await this.revokeSession(sessionsToRevoke[0].id);
+      await this.revokeSession(
+        sessionsToRevoke[0].id,
+        sessionsToRevoke[0].deviceId,
+      );
     } catch (error) {
       throw new Error(
         'Error revoking oldest session: ' +
