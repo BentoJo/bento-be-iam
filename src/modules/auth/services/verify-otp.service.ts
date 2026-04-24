@@ -199,7 +199,7 @@ export class OtpService {
       refreshTokenHash: hashedRefreshToken,
     });
 
-    const accessToken = signAccessToken({
+    const accessToken = await signAccessToken({
       sub: userRecord.id,
       deviceId: device.id,
       globalRole: userRecord.globalRole || 'user',
@@ -305,7 +305,7 @@ export class OtpService {
     });
 
     // 4. GENERATE TOKENS
-    const accessToken = signAccessToken({
+    const accessToken = await signAccessToken({
       sub: userRecord.id,
       deviceId: device.id,
       globalRole: userRecord.globalRole || 'user',

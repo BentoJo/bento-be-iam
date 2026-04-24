@@ -6,6 +6,7 @@ import { OtpService } from './services/verify-otp.service';
 import { ResendOtpService } from './services/resend-otp.service';
 import { LoginService } from './services/login.service';
 import { RefreshTokenService } from './services/refresh-token.service';
+import { KeyRotationService } from './services/key-rotation.service';
 import { SessionFunction } from '../../shared/func/session';
 import { DeviceFunction } from '../../shared/func/device';
 import { UserFunction } from '../../shared/func/users';
@@ -19,6 +20,7 @@ import { UserFunction } from '../../shared/func/users';
     OtpService,
     ResendOtpService,
     RefreshTokenService,
+    KeyRotationService,
     SessionFunction,
     DeviceFunction,
     UserFunction,
