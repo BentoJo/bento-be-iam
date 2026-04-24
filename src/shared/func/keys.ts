@@ -199,10 +199,7 @@ export async function deactivateKey(keyInfo: KeyInfo): Promise<void> {
 
 export async function revokeKey(keyInfo: KeyInfo): Promise<void> {
   try {
-    await db
-      .update(keys)
-      .set({ status: 'revoked', expiresAt: new Date() })
-      .where(eq(keys.kid, keyInfo.kid));
+    await db.delete(keys).where(eq(keys.kid, keyInfo.kid));
   } catch (error) {
     throw new Error(
       'Error revoking key: ' +

@@ -1,18 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
 import { createPublicKey } from 'crypto';
 import { exportJWK } from 'jose';
-import {
-  ensureActiveJwtKey,
-  getVerifyingJwtKeys,
-} from '../../shared/func/keys';
+import { ensureActiveJwtKey, getVerifyingKeys } from '../../shared/func/keys';
 
 @Controller('.well-known')
 export class JwksController {
   @Get('jwks.json')
   async getKeys() {
     await ensureActiveJwtKey();
-    const verifyingKeys = await getVerifyingJwtKeys();
-
+    const verifyingKeys = await getVerifyingKeys();
+    console.log(verifyingKeys);
     const jwks = await Promise.all(
       verifyingKeys.map(async (key) => {
         const jwk = await exportJWK(createPublicKey(key.publicKey));
