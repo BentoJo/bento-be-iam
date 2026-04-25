@@ -4,7 +4,7 @@ export const hash = async (v: string) =>
   crypto
     .createHmac(
       'sha256',
-      process.env.OTP_HASH_SECRET || process.env.JWT_ACCESS_SECRET!,
+      process.env.OTP_HASH_SECRET || process.env.KEY_REFRESH_SECRET!,
     )
     .update(v)
     .digest('hex');

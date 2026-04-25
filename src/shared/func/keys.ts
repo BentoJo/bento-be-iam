@@ -85,7 +85,12 @@ export async function getVerifyingJwtKeys(): Promise<KeyInfo[]> {
   return db
     .select()
     .from(keys)
-    .where(inArray(keys.status, ['active', 'grace']))
+    .where(
+      and(
+        inArray(keys.status, ['active', 'grace']),
+        lt(keys.expiresAt, new Date(new Date().getTime() + 5 * 60 * 1000)),
+      ),
+    )
     .orderBy(desc(keys.createdAt));
 }
 
@@ -117,18 +122,11 @@ export async function revokeExpiredGraceKeys(): Promise<number> {
     return 0;
   }
 
-  await db
-    .update(keys)
-    .set({ status: 'revoked' })
-    .where(
-      inArray(
-        keys.kid,
-        expiredKeys.map((key) => key.kid),
-      ),
-    );
+  await revokeKeys(expiredKeys);
 
   return expiredKeys.length;
 }
+
 export async function insertKey(keyInfo: KeyInfo): Promise<KeyInfo[]> {
   try {
     const newKey = await db.insert(keys).values(keyInfo).returning();
@@ -197,9 +195,18 @@ export async function deactivateKey(keyInfo: KeyInfo): Promise<void> {
   }
 }
 
-export async function revokeKey(keyInfo: KeyInfo): Promise<void> {
+export async function revokeKeys(keyInfo: KeyInfo[]): Promise<void> {
   try {
-    await db.delete(keys).where(eq(keys.kid, keyInfo.kid));
+    if (keyInfo.length === 0) {
+      return;
+    }
+
+    await db.delete(keys).where(
+      inArray(
+        keys.kid,
+        keyInfo.map((key) => key.kid),
+      ),
+    );
   } catch (error) {
     throw new Error(
       'Error revoking key: ' +
