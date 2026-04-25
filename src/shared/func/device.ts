@@ -3,6 +3,7 @@ import db from '../configs/db.config';
 import { devices } from '../db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { ClientData, DeviceInfo } from '../types/devices/devices';
+import { hash } from '../utils/hash';
 
 @Injectable()
 export class DeviceFunction {
@@ -16,11 +17,13 @@ export class DeviceFunction {
         throw new Error('Maximum number of devices reached for this user');
       }
 
+      const deviceHash = await hash(deviceInfo.deviceFingerprint);
+
       const device = await db
         .insert(devices)
         .values({
           userId,
-          deviceFingerprintHash: deviceInfo.deviceFingerprint,
+          deviceFingerprintHash: deviceHash,
           deviceName:
             deviceInfo.fingerprintComponents?.deviceName ||
             deviceInfo.deviceInfo,
@@ -71,19 +74,12 @@ export class DeviceFunction {
   }
 
   async countActiveDevices(userId: string): Promise<number> {
-    try {
-      const activeDevices = await db
-        .select()
-        .from(devices)
-        .where(and(eq(devices.userId, userId), isNull(devices.revokedAt)));
+    const activeDevices = await db
+      .select()
+      .from(devices)
+      .where(and(eq(devices.userId, userId), isNull(devices.revokedAt)));
 
-      return activeDevices.length;
-    } catch (error) {
-      throw new Error(
-        'Error counting active devices: ' +
-          (error instanceof Error ? error.message : String(error)),
-      );
-    }
+    return activeDevices.length;
   }
 
   async revokeDevice(deviceId: string): Promise<void> {

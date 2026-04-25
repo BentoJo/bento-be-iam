@@ -181,8 +181,12 @@ export class OtpService {
       .set({ authStatus: 'verified' })
       .where(eq(users.id, userRecord.id));
 
-    const fingerprint = clientData.deviceFingerprint || clientData.deviceInfo;
-    const deviceHash = await hash(fingerprint);
+    if (!clientData.deviceFingerprint) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: 'DEVICE_FINGERPRINT_REQUIRED',
+      });
+    }
 
     const device = await this.deviceFun.registerDevice(
       userRecord.id,
@@ -231,8 +235,15 @@ export class OtpService {
     // 1. DEVICE LOGIC: Two-tier device identification
     //    Tier 1 (primary):  server-issued persistent device token (X-Device-Token header)
     //    Tier 2 (fallback): exact hash match, then fuzzy component match (merge when close)
-    const fingerprint = clientData.deviceFingerprint || clientData.deviceInfo;
+    const fingerprint = clientData.deviceFingerprint;
     const deviceHash = await hash(fingerprint);
+
+    if (!fingerprint) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: 'DEVICE_FINGERPRINT_MISSING',
+      });
+    }
 
     let device;
 
@@ -257,7 +268,7 @@ export class OtpService {
       const userDevices = await this.deviceFun.countActiveDevices(
         userRecord.id,
       );
-      if (userDevices[0].count >= MAX_DEVICES) {
+      if (userDevices >= MAX_DEVICES) {
         throw new RpcException({
           code: GrpcStatus.PERMISSION_DENIED,
           message: 'DEVICE_LIMIT_REACHED',
@@ -269,7 +280,7 @@ export class OtpService {
       const userDevices = await this.deviceFun.countActiveDevices(
         userRecord.id,
       );
-      if (userDevices[0].count >= MAX_DEVICES) {
+      if (userDevices >= MAX_DEVICES) {
         throw new RpcException({
           code: GrpcStatus.PERMISSION_DENIED,
           message: 'DEVICE_LIMIT_REACHED',
@@ -286,7 +297,7 @@ export class OtpService {
       device.id,
     );
 
-    if (activeSessions[0].count >= MAX_ACTIVE_SESSIONS) {
+    if (activeSessions >= MAX_ACTIVE_SESSIONS) {
       throw new RpcException({
         code: GrpcStatus.PERMISSION_DENIED,
         message: 'SESSION_LIMIT_REACHED',
