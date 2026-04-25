@@ -85,12 +85,7 @@ export async function getVerifyingJwtKeys(): Promise<KeyInfo[]> {
   return db
     .select()
     .from(keys)
-    .where(
-      and(
-        inArray(keys.status, ['active', 'grace']),
-        lt(keys.expiresAt, new Date(new Date().getTime() + 5 * 60 * 1000)),
-      ),
-    )
+    .where(and(inArray(keys.status, ['active', 'grace'])))
     .orderBy(desc(keys.createdAt));
 }
 
