@@ -9,7 +9,6 @@ export class JwksController {
   async getKeys() {
     await ensureActiveJwtKey();
     const verifyingKeys = await getVerifyingKeys();
-    console.log(verifyingKeys);
     const jwks = await Promise.all(
       verifyingKeys.map(async (key) => {
         const jwk = await exportJWK(createPublicKey(key.publicKey));
