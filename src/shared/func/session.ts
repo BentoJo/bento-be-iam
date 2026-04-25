@@ -10,6 +10,7 @@ import {
 } from '../types/sessions/sessions';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
+import { hash } from '../utils/hash';
 
 @Injectable()
 export class SessionFunction {
@@ -81,7 +82,7 @@ export class SessionFunction {
     }
   }
 
-  async revokeSession(sessionId: string, deviceId: string): Promise<void> {
+  async revokeSession(sessionId: string): Promise<void> {
     try {
       const revokedSession = await db
         .update(sessions)
@@ -89,7 +90,6 @@ export class SessionFunction {
         .where(
           and(
             eq(sessions.id, sessionId),
-            eq(sessions.deviceId, deviceId),
             isNull(sessions.revokedAt),
           ),
         )
@@ -127,7 +127,6 @@ export class SessionFunction {
 
       await this.revokeSession(
         sessionsToRevoke[0].id,
-        sessionsToRevoke[0].deviceId,
       );
     } catch (error) {
       throw new Error(
@@ -321,6 +320,32 @@ export class SessionFunction {
           'Error updating session refresh token: ' +
           (error instanceof Error ? error.message : String(error)),
       });
+    }
+  }
+
+  async revokeSessionByRefreshToken(refreshToken: string): Promise<void> {
+    try {
+      const refreshTokenHash = await hash(refreshToken);
+
+      const revokedSession = await db
+        .update(sessions)
+        .set({ revokedAt: new Date() })
+        .where(
+          and(
+            eq(sessions.refreshTokenHash, refreshTokenHash),
+            isNull(sessions.revokedAt),
+          ),
+        )
+        .returning({ id: sessions.id });
+
+      if (revokedSession.length === 0) {
+        throw new Error('Session not found or already revoked');
+      }
+    } catch (error) {
+      throw new Error(
+        'Error revoking session by refresh token: ' +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
   }
 }

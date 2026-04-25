@@ -14,6 +14,14 @@ import {
 } from '../../shared/types/auth/otp';
 import { RefreshTokenResponse } from '../../shared/types/auth/refresh-token';
 import { toClientData } from '../../shared/grpc/client-context.mapper';
+import { LogoutService } from './services/logout.service';
+import { LogoutAllService } from './services/logout-all.service';
+import type {
+  LogoutAllRequest,
+  LogoutAllResponse,
+  LogoutRequest,
+  LogoutResponse,
+} from '../../shared/types/auth/logout';
 
 @Controller()
 export class AuthController {
@@ -24,6 +32,8 @@ export class AuthController {
     private readonly otpService: OtpService,
     private readonly resendOTPService: ResendOtpService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly logoutService: LogoutService,
+    private readonly logoutAllService: LogoutAllService,
   ) {}
 
   @GrpcMethod('AuthService', 'HealthCheck')
@@ -64,5 +74,15 @@ export class AuthController {
     return this.refreshTokenService.refreshToken(
       data,
     ) as Promise<RefreshTokenResponse>;
+  }
+  
+  @GrpcMethod('AuthService', 'Logout')
+  logout(data: LogoutRequest) {
+    return this.logoutService.logout(data) as Promise<LogoutResponse>;
+  }
+
+  @GrpcMethod('AuthService', 'LogoutAll')
+  logoutAll(data: LogoutAllRequest) {
+    return this.logoutAllService.logoutAll(data) as Promise<LogoutAllResponse>;
   }
 }

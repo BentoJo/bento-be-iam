@@ -11,6 +11,8 @@ service AuthService {
     rpc VerifyOTP (VerifyOTPRequest) returns (VerifyOTPResponse);
     rpc ResendOTP (OtpResendRequest) returns (OtpResendResponse);
     rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+    rpc Logout (LogoutRequest) returns (LogoutResponse);
+    rpc LogoutAll (LogoutAllRequest) returns (LogoutAllResponse);
 }
 
 enum OTPType {
@@ -107,4 +109,22 @@ message RefreshTokenResponse {
   
     string accessTokenExpiresAt = 3;
     string refreshTokenExpiresAt = 4;
+}
+
+message LogoutRequest {
+    string refreshToken = 1;
+}
+
+message LogoutResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message LogoutAllRequest {
+    string userId = 1;
+}
+
+message LogoutAllResponse {
+    bool success = 1;
+    string message = 2;
 }

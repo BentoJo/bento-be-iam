@@ -10,6 +10,8 @@ import { KeyRotationService } from './services/key-rotation.service';
 import { SessionFunction } from '../../shared/func/session';
 import { DeviceFunction } from '../../shared/func/device';
 import { UserFunction } from '../../shared/func/users';
+import { LogoutService } from './services/logout.service';
+import { LogoutAllService } from './services/logout-all.service';
 
 @Module({
   controllers: [AuthController],
@@ -20,6 +22,8 @@ import { UserFunction } from '../../shared/func/users';
     OtpService,
     ResendOtpService,
     RefreshTokenService,
+    LogoutService,
+    LogoutAllService,
     KeyRotationService,
     SessionFunction,
     DeviceFunction,
