@@ -41,7 +41,7 @@ export class RefreshTokenService {
     }
     // Check if session is expired
     if (session.expiresAt && new Date() > new Date(session.expiresAt)) {
-      await this.sessionFun.revokeSession(session.id, session.deviceId);
+      await this.sessionFun.revokeSession(session.id);
       throw new RpcException({
         code: GrpcStatus.UNAUTHENTICATED,
         message: 'this sesstion is expired',
@@ -53,7 +53,7 @@ export class RefreshTokenService {
     )) as UserInfo;
     // Check if user is banned
     if (userRecord.authStatus === 'banned') {
-      await this.sessionFun.revokeSession(session.id, session.deviceId);
+      await this.sessionFun.revokeSession(session.id);
       throw new RpcException({
         code: GrpcStatus.PERMISSION_DENIED,
         message:
