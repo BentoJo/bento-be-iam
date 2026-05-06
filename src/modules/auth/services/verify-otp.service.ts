@@ -176,7 +176,6 @@ export class OtpService {
       .set({ authStatus: 'verified' })
       .where(eq(users.id, userRecord.id));
 
-<<<<<<< Updated upstream
     if (!clientData.deviceFingerprint) {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
@@ -184,8 +183,6 @@ export class OtpService {
       });
     }
 
-=======
->>>>>>> Stashed changes
     const device = await this.deviceFun.registerDevice(
       userRecord.id,
       clientData,
@@ -236,7 +233,6 @@ export class OtpService {
     const fingerprint = clientData.deviceFingerprint;
     const deviceHash = await hash(fingerprint);
 
-<<<<<<< Updated upstream
     if (!fingerprint) {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
@@ -244,27 +240,30 @@ export class OtpService {
       });
     }
 
-    let device;
-=======
-    type DeviceLite = { id: string; revokedAt?: Date | null } | null;
-    let device: DeviceLite = null;
->>>>>>> Stashed changes
+    type DeviceLike = { id: string; revokedAt?: Date | null };
+    let device: DeviceLike | null = null;
 
     // Tier 1: match by server-issued device token
     if (clientData.deviceToken) {
-      device = await this.deviceFun.findDeviceByToken(
+      device = (await this.deviceFun.findDeviceByToken(
         userRecord.id,
         clientData.deviceToken,
-      );
+      )) as DeviceLike | null;
     }
 
     if (!device) {
-      device = await this.deviceFun.findDeviceByHash(userRecord.id, deviceHash);
+      device = (await this.deviceFun.findDeviceByHash(
+        userRecord.id,
+        deviceHash,
+      )) as DeviceLike | null;
     }
 
     // Tier 2b: fuzzy match — hash differs but components are close (e.g. timezone/hw cap changed) → merge
     if (!device && clientData.fingerprintComponents) {
-      device = await this.deviceFun.findDeviceByHash(userRecord.id, deviceHash);
+      device = (await this.deviceFun.findDeviceByHash(
+        userRecord.id,
+        deviceHash,
+      )) as DeviceLike | null;
     }
 
     if (!device) {
