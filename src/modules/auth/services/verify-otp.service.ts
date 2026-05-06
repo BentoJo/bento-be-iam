@@ -101,6 +101,7 @@ export class OtpService {
       const currentOtpAttempts = (otpRecord.attempts || 0) + 1;
       const totalUserFailedAttempts = (userRecord.failedAttempts || 0) + 1;
 
+      // Lockout logic: every 5 failed attempts → lock account with increasing duration (2min, 4min, 6min, etc.)
       const lockoutUntil =
         totalUserFailedAttempts % 5 === 0
           ? new Date(Date.now() + totalUserFailedAttempts * 2 * 60 * 1000)
@@ -154,15 +155,9 @@ export class OtpService {
     // RESPONSE
     switch (otpRecord.type) {
       case 'REGISTRATION':
-        return (await this.registerHandler(
-          userRecord,
-          clientData,
-        )) as VerifyOtpResponse;
+        return await this.registerHandler(userRecord, clientData);
       case 'LOGIN':
-        return (await this.loginHandler(
-          userRecord,
-          clientData,
-        )) as VerifyOtpResponse;
+        return await this.loginHandler(userRecord, clientData);
 
       default:
         throw new RpcException({
@@ -181,6 +176,7 @@ export class OtpService {
       .set({ authStatus: 'verified' })
       .where(eq(users.id, userRecord.id));
 
+<<<<<<< Updated upstream
     if (!clientData.deviceFingerprint) {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
@@ -188,9 +184,11 @@ export class OtpService {
       });
     }
 
+=======
+>>>>>>> Stashed changes
     const device = await this.deviceFun.registerDevice(
       userRecord.id,
-      clientData!,
+      clientData,
     );
 
     const refreshToken = randomBytes(40).toString('hex');
@@ -238,6 +236,7 @@ export class OtpService {
     const fingerprint = clientData.deviceFingerprint;
     const deviceHash = await hash(fingerprint);
 
+<<<<<<< Updated upstream
     if (!fingerprint) {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
@@ -246,12 +245,16 @@ export class OtpService {
     }
 
     let device;
+=======
+    type DeviceLite = { id: string; revokedAt?: Date | null } | null;
+    let device: DeviceLite = null;
+>>>>>>> Stashed changes
 
     // Tier 1: match by server-issued device token
     if (clientData.deviceToken) {
       device = await this.deviceFun.findDeviceByToken(
         userRecord.id,
-        clientData.deviceToken!,
+        clientData.deviceToken,
       );
     }
 
@@ -274,7 +277,7 @@ export class OtpService {
           message: 'DEVICE_LIMIT_REACHED',
         });
       }
-      device = await this.deviceFun.registerDevice(userRecord.id, clientData!);
+      device = await this.deviceFun.registerDevice(userRecord.id, clientData);
     } else if (device.revokedAt) {
       // Device was revoked — check MAX_DEVICES before re-activating
       const userDevices = await this.deviceFun.countActiveDevices(
@@ -287,7 +290,7 @@ export class OtpService {
         });
       }
       // Re-activate the device
-      device = await this.deviceFun.reactivateDevice(device.id);
+      await this.deviceFun.reactivateDevice(device.id);
     } else {
       await this.deviceFun.touchDevice(device.id);
     }
@@ -375,10 +378,10 @@ export class OtpService {
     }
   }
 
-  private async fingerprintComponentsMatch(
+  private fingerprintComponentsMatch(
     stored: FingerprintComponents | null,
     current: FingerprintComponents,
-  ): Promise<boolean> {
+  ): boolean {
     if (!stored) return false;
     if (
       stored.deviceName !== current.deviceName ||

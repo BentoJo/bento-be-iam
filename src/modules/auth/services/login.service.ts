@@ -28,6 +28,13 @@ export class LoginService {
       });
     }
 
+    if (existingUser.lockedUntil && existingUser.lockedUntil > new Date()) {
+      throw new RpcException({
+        code: GrpcStatus.FAILED_PRECONDITION,
+        message: 'this account is locked try again later',
+      });
+    }
+
     await createAndSendOtp(
       existingUser.id,
       existingUser.firstName + ' ' + existingUser.lastName,
