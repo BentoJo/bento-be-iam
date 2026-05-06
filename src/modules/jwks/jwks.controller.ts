@@ -1,22 +1,29 @@
 import { Controller, Get } from '@nestjs/common';
+import { createPublicKey } from 'crypto';
 import { exportJWK } from 'jose';
-import { RSA_PUBLIC_KEY, JWT_KID } from '../../shared/configs/keys.config';
+import { ensureActiveJwtKey, getVerifyingKeys } from '../../shared/func/keys';
 
 @Controller('.well-known')
 export class JwksController {
   @Get('jwks.json')
   async getKeys() {
-    const jwk = await exportJWK(RSA_PUBLIC_KEY);
+    await ensureActiveJwtKey();
+    const verifyingKeys = await getVerifyingKeys();
+    const jwks = await Promise.all(
+      verifyingKeys.map(async (key) => {
+        const jwk = await exportJWK(createPublicKey(key.publicKey));
 
-    return {
-      keys: [
-        {
+        return {
           ...jwk,
-          kid: JWT_KID,
+          kid: key.kid,
           use: 'sig',
           alg: 'RS256',
-        },
-      ],
+        };
+      }),
+    );
+
+    return {
+      keys: jwks,
     };
   }
 }

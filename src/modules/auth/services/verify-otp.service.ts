@@ -101,6 +101,7 @@ export class OtpService {
       const currentOtpAttempts = (otpRecord.attempts || 0) + 1;
       const totalUserFailedAttempts = (userRecord.failedAttempts || 0) + 1;
 
+      // Lockout logic: every 5 failed attempts → lock account with increasing duration (2min, 4min, 6min, etc.)
       const lockoutUntil =
         totalUserFailedAttempts % 5 === 0
           ? new Date(Date.now() + totalUserFailedAttempts * 2 * 60 * 1000)
@@ -154,15 +155,9 @@ export class OtpService {
     // RESPONSE
     switch (otpRecord.type) {
       case 'REGISTRATION':
-        return (await this.registerHandler(
-          userRecord,
-          clientData,
-        )) as VerifyOtpResponse;
+        return await this.registerHandler(userRecord, clientData);
       case 'LOGIN':
-        return (await this.loginHandler(
-          userRecord,
-          clientData,
-        )) as VerifyOtpResponse;
+        return await this.loginHandler(userRecord, clientData);
 
       default:
         throw new RpcException({
@@ -181,12 +176,19 @@ export class OtpService {
       .set({ authStatus: 'verified' })
       .where(eq(users.id, userRecord.id));
 
-    const fingerprint = clientData.deviceFingerprint || clientData.deviceInfo;
-    const deviceHash = await hash(fingerprint);
+<<<<<<< Updated upstream
+    if (!clientData.deviceFingerprint) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: 'DEVICE_FINGERPRINT_REQUIRED',
+      });
+    }
 
+=======
+>>>>>>> Stashed changes
     const device = await this.deviceFun.registerDevice(
       userRecord.id,
-      clientData!,
+      clientData,
     );
 
     const refreshToken = randomBytes(40).toString('hex');
@@ -199,7 +201,7 @@ export class OtpService {
       refreshTokenHash: hashedRefreshToken,
     });
 
-    const accessToken = signAccessToken({
+    const accessToken = await signAccessToken({
       sub: userRecord.id,
       deviceId: device.id,
       globalRole: userRecord.globalRole || 'user',
@@ -231,16 +233,28 @@ export class OtpService {
     // 1. DEVICE LOGIC: Two-tier device identification
     //    Tier 1 (primary):  server-issued persistent device token (X-Device-Token header)
     //    Tier 2 (fallback): exact hash match, then fuzzy component match (merge when close)
-    const fingerprint = clientData.deviceFingerprint || clientData.deviceInfo;
+    const fingerprint = clientData.deviceFingerprint;
     const deviceHash = await hash(fingerprint);
 
+<<<<<<< Updated upstream
+    if (!fingerprint) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: 'DEVICE_FINGERPRINT_MISSING',
+      });
+    }
+
     let device;
+=======
+    type DeviceLite = { id: string; revokedAt?: Date | null } | null;
+    let device: DeviceLite = null;
+>>>>>>> Stashed changes
 
     // Tier 1: match by server-issued device token
     if (clientData.deviceToken) {
       device = await this.deviceFun.findDeviceByToken(
         userRecord.id,
-        clientData.deviceToken!,
+        clientData.deviceToken,
       );
     }
 
@@ -257,26 +271,26 @@ export class OtpService {
       const userDevices = await this.deviceFun.countActiveDevices(
         userRecord.id,
       );
-      if (userDevices[0].count >= MAX_DEVICES) {
+      if (userDevices >= MAX_DEVICES) {
         throw new RpcException({
           code: GrpcStatus.PERMISSION_DENIED,
           message: 'DEVICE_LIMIT_REACHED',
         });
       }
-      device = await this.deviceFun.registerDevice(userRecord.id, clientData!);
+      device = await this.deviceFun.registerDevice(userRecord.id, clientData);
     } else if (device.revokedAt) {
       // Device was revoked — check MAX_DEVICES before re-activating
       const userDevices = await this.deviceFun.countActiveDevices(
         userRecord.id,
       );
-      if (userDevices[0].count >= MAX_DEVICES) {
+      if (userDevices >= MAX_DEVICES) {
         throw new RpcException({
           code: GrpcStatus.PERMISSION_DENIED,
           message: 'DEVICE_LIMIT_REACHED',
         });
       }
       // Re-activate the device
-      device = await this.deviceFun.reactivateDevice(device.id);
+      await this.deviceFun.reactivateDevice(device.id);
     } else {
       await this.deviceFun.touchDevice(device.id);
     }
@@ -286,7 +300,7 @@ export class OtpService {
       device.id,
     );
 
-    if (activeSessions[0].count >= MAX_ACTIVE_SESSIONS) {
+    if (activeSessions >= MAX_ACTIVE_SESSIONS) {
       throw new RpcException({
         code: GrpcStatus.PERMISSION_DENIED,
         message: 'SESSION_LIMIT_REACHED',
@@ -305,7 +319,7 @@ export class OtpService {
     });
 
     // 4. GENERATE TOKENS
-    const accessToken = signAccessToken({
+    const accessToken = await signAccessToken({
       sub: userRecord.id,
       deviceId: device.id,
       globalRole: userRecord.globalRole || 'user',
@@ -364,10 +378,10 @@ export class OtpService {
     }
   }
 
-  private async fingerprintComponentsMatch(
+  private fingerprintComponentsMatch(
     stored: FingerprintComponents | null,
     current: FingerprintComponents,
-  ): Promise<boolean> {
+  ): boolean {
     if (!stored) return false;
     if (
       stored.deviceName !== current.deviceName ||

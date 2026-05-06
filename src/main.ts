@@ -13,12 +13,13 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: ['session', 'user', 'auth', 'device'],
+      package: ['session', 'user', 'auth', 'device', 'common'],
       protoPath: [
         join(__dirname, '../src/shared/proto/user.proto'),
         join(__dirname, '../src/shared/proto/auth.proto'),
         join(__dirname, '../src/shared/proto/device.proto'),
         join(__dirname, '../src/shared/proto/session.proto'),
+        join(__dirname, '../src/shared/proto/common.proto'),
       ],
       url: `0.0.0.0:${grpcPort}`,
       loader: {

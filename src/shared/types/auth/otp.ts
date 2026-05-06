@@ -1,6 +1,9 @@
+import { ClientContext } from './session';
+
 export interface VerifyOtp {
   email: string;
   code: string;
+  clientContext?: ClientContext;
 }
 
 export interface OtpResendResponse {

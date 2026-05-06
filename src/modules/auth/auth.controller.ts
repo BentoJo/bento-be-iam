@@ -4,7 +4,7 @@ import { HealthService } from './services/health.service';
 import { RegisterService } from './services/register.service';
 import { OtpService } from './services/verify-otp.service';
 import { ResendOtpService } from './services/resend-otp.service';
-import { ClientData } from '../../shared/types/auth/session';
+import { ClientContext } from '../../shared/types/auth/session';
 import { LoginService } from './services/login.service';
 import { RefreshTokenService } from './services/refresh-token.service';
 import { LoginResponse } from '../../shared/types/auth/login';
@@ -13,6 +13,15 @@ import {
   VerifyOtpResponse,
 } from '../../shared/types/auth/otp';
 import { RefreshTokenResponse } from '../../shared/types/auth/refresh-token';
+import { toClientData } from '../../shared/grpc/client-context.mapper';
+import { LogoutService } from './services/logout.service';
+import { LogoutAllService } from './services/logout-all.service';
+import type {
+  LogoutAllRequest,
+  LogoutAllResponse,
+  LogoutRequest,
+  LogoutResponse,
+} from '../../shared/types/auth/logout';
 
 @Controller()
 export class AuthController {
@@ -23,6 +32,8 @@ export class AuthController {
     private readonly otpService: OtpService,
     private readonly resendOTPService: ResendOtpService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly logoutService: LogoutService,
+    private readonly logoutAllService: LogoutAllService,
   ) {}
 
   @GrpcMethod('AuthService', 'HealthCheck')
@@ -41,21 +52,12 @@ export class AuthController {
   }
 
   @GrpcMethod('AuthService', 'VerifyOTP')
-  verifyOTP(data: { email: string; code: string }) {
-    const clientData: ClientData = {
-      deviceFingerprint: 'DEMO',
-      ipAddress: 'DEMO',
-      deviceInfo: 'DEMO',
-      location: 'DEMO',
-      deviceToken: 'DEMO',
-      fingerprintComponents: {
-        deviceName: 'DEMO',
-        hardwareConcurrency: 0,
-        platform: 'DEMO',
-        language: 'DEMO',
-        timezone: 'DEMO',
-      },
-    };
+  verifyOTP(data: {
+    email: string;
+    code: string;
+    clientContext?: ClientContext;
+  }) {
+    const clientData = toClientData(data.clientContext);
     return this.otpService.verifyOtp(
       data,
       clientData,
@@ -72,5 +74,15 @@ export class AuthController {
     return this.refreshTokenService.refreshToken(
       data,
     ) as Promise<RefreshTokenResponse>;
+  }
+  
+  @GrpcMethod('AuthService', 'Logout')
+  logout(data: LogoutRequest) {
+    return this.logoutService.logout(data) as Promise<LogoutResponse>;
+  }
+
+  @GrpcMethod('AuthService', 'LogoutAll')
+  logoutAll(data: LogoutAllRequest) {
+    return this.logoutAllService.logoutAll(data) as Promise<LogoutAllResponse>;
   }
 }
