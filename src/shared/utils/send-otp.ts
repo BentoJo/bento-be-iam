@@ -8,6 +8,8 @@ import { loginEmail } from './loginEmail';
 import { registerEmail } from './registrationEmail';
 import { OtpType } from '../types/auth/session';
 import { OtpResendResponse } from '../types/auth/otp';
+import { RpcException } from '@nestjs/microservices';
+import { status as GrpcStatus } from '@grpc/grpc-js';
 
 export async function createAndSendOtp(
   userId: string,
@@ -15,6 +17,27 @@ export async function createAndSendOtp(
   email: string,
   type: OtpType,
 ): Promise<OtpResendResponse> {
+  const [{ count }] = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(otps)
+    .where(
+      and(
+        eq(otps.userId, userId),
+        eq(otps.type, type),
+        sql`created_at > NOW() - INTERVAL '10 minutes'`,
+      ),
+    );
+
+  const attemptsCount = Number(count ?? 0);
+  console.log(`OTP attempts for user ${userId} (type=${type}):`, attemptsCount);
+
+  if (attemptsCount >= 5) {
+    throw new RpcException({
+      code: GrpcStatus.RESOURCE_EXHAUSTED,
+      message: 'Too many OTP requests. Please try again later.',
+    });
+  }
+
   await db
     .update(otps)
     .set({
