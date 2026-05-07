@@ -73,5 +73,11 @@ export async function createAndSendOtp(
 
   await sendEmail(email, subject, htmlContent).catch(console.error);
 
-  return { method: 'EMAIL', email: email, expiresIn: '10 minutes' };
+  return {
+    method: 'EMAIL',
+    email: email,
+    expiresIn: '10 minutes',
+    resendAfter:
+      attemptsCount >= 5 ? new Date(Date.now() + 10 * 60 * 1000) : undefined, // 10 minutes cooldown after 5 attempts
+  };
 }
