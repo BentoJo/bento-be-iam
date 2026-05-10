@@ -2,8 +2,7 @@ import { Injectable } from '@nestjs/common';
 import db from '../../../shared/configs/db.config';
 import { otps, users } from '../../../shared/db/schema';
 import { createAndSendOtp } from '../../../shared/utils/send-otp';
-import { eq, sql, desc, and } from 'drizzle-orm';
-import { OtpType } from '../../../shared/types/auth/session';
+import { eq, desc } from 'drizzle-orm';
 import { OtpResendResponse } from '../../../shared/types/auth/otp';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
@@ -50,11 +49,11 @@ export class ResendOtpService {
       });
     }
 
-    return (await createAndSendOtp(
+    return await createAndSendOtp(
       user.id,
       user.firstName + ' ' + user.lastName,
       user.email,
-      lastOtp.type as OtpType,
-    )) as OtpResendResponse;
+      lastOtp.type,
+    );
   }
 }
