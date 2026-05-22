@@ -5,12 +5,13 @@ import { eq } from 'drizzle-orm';
 
 import db from '../../../shared/configs/db.config';
 import { users } from '../../../shared/db/schema';
-import { validateRequired, validateEmail } from '../../../shared/validations';
-import { createAndSendOtp } from '../../../shared/utils/send-otp';
 import {
-  RegisterRequest,
-  RegisterResponse,
-} from '../../../shared/types/auth/register';
+  validateRequired,
+  validateEmail,
+  validateName,
+} from '../../../shared/validations';
+import { createAndSendOtp } from '../../../shared/utils/send-otp';
+import { RegisterRequest } from '../../../shared/types/auth/register';
 import { LoginResponse } from '../../../shared/types/auth/login';
 
 //  Service
@@ -21,7 +22,7 @@ export class RegisterService {
     const { email, firstName, lastName } = data;
 
     // Validate
-    this.validateInput(email);
+    this.validateInput(email, firstName, lastName);
 
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -70,13 +71,30 @@ export class RegisterService {
   }
 
   // Private Helpers
-
-  private validateInput(email: string): void {
+  private validateInput(
+    email: string,
+    firstName: string,
+    lastName: string,
+  ): void {
     const requiredResult = validateRequired(email, 'Email');
     if (!requiredResult.valid) {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
         message: requiredResult.message,
+      });
+    }
+    const firstNameResult = validateRequired(firstName, 'First Name');
+    if (!firstNameResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: firstNameResult.message,
+      });
+    }
+    const lastNameResult = validateRequired(lastName, 'Last Name');
+    if (!lastNameResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: lastNameResult.message,
       });
     }
 
@@ -85,6 +103,20 @@ export class RegisterService {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
         message: emailResult.message,
+      });
+    }
+    const firstNameValidation = validateName(firstName, 'First Name');
+    if (!firstNameValidation.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: firstNameValidation.message,
+      });
+    }
+    const lastNameValidation = validateName(lastName, 'Last Name');
+    if (!lastNameValidation.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: lastNameValidation.message,
       });
     }
   }

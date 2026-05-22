@@ -6,11 +6,16 @@ import { eq, desc } from 'drizzle-orm';
 import { OtpResendResponse } from '../../../shared/types/auth/otp';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
+import { validateEmail, validateRequired } from '../../../shared/validations';
 
 @Injectable()
 export class ResendOtpService {
   async resendOtp(data: { email: string }): Promise<OtpResendResponse> {
     const { email } = data;
+
+    // Validate input
+    this.validateInput(email);
+
     const [user] = await db.select().from(users).where(eq(users.email, email));
 
     if (!user) {
@@ -55,5 +60,23 @@ export class ResendOtpService {
       user.email,
       lastOtp.type,
     );
+  }
+
+  private validateInput(email: string): void {
+    const requiredResult = validateRequired(email, 'Email');
+    if (!requiredResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: requiredResult.message,
+      });
+    }
+
+    const emailResult = validateEmail(email);
+    if (!emailResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: emailResult.message,
+      });
+    }
   }
 }

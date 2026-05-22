@@ -68,11 +68,11 @@ export const validateName = (
     };
   }
   // Allow letters (any script) and spaces
-  const nameRegex = /^[\p{L}\s]+$/u;
+  const nameRegex = /^[A-Za-z\s]+$/;
   if (!nameRegex.test(trimmed)) {
     return {
       valid: false,
-      message: `${fieldName} must contain only letters and spaces`,
+      message: `${fieldName} must contain only letters without spaces and special characters`,
     };
   }
   return { valid: true };
