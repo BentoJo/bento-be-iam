@@ -39,14 +39,7 @@ export class ResendOtpService {
       .orderBy(desc(otps.createdAt))
       .limit(1);
 
-    if (lastOtp.usedAt !== null) {
-      throw new RpcException({
-        code: GrpcStatus.FAILED_PRECONDITION,
-        message: 'OTP_ALREADY_USED',
-      });
-    }
-
-    if (Date.now() - new Date(lastOtp.createdAt).getTime() < 60000) {
+    if (lastOtp && Date.now() - new Date(lastOtp.createdAt).getTime() < 60000) {
       // 1 minute cooldown
       throw new RpcException({
         code: GrpcStatus.RESOURCE_EXHAUSTED,
