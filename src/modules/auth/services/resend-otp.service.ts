@@ -51,7 +51,7 @@ export class ResendOtpService {
       user.id,
       user.firstName + ' ' + user.lastName,
       user.email,
-      lastOtp.type,
+      lastOtp?.type ?? 'LOGIN',
     );
   }
 
