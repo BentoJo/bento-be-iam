@@ -18,22 +18,24 @@ export class DevicesService {
   async listDevicesService(
     userId: string,
     currentDeviceId?: string,
-  ): Promise<DeviceInfo[]> {
+  ): Promise<{ devices: DeviceInfo[] }> {
     try {
       const devicesList = await db
         .select()
         .from(devices)
         .where(and(eq(devices.userId, userId), isNull(devices.revokedAt)));
 
-      return devicesList.map((device) => ({
-        id: device.id,
-        deviceFingerprintHash: device.deviceFingerprintHash,
-        deviceName: device.deviceName,
-        firstSeenAt: device.firstSeenAt,
-        lastSeenAt: device.lastSeenAt,
-        isCurrent: currentDeviceId ? device.id === currentDeviceId : false,
-        isActive: device.revokedAt === null,
-      })) as DeviceInfo[];
+      return {
+        devices: devicesList.map((device) => ({
+          id: device.id,
+          deviceFingerprintHash: device.deviceFingerprintHash,
+          deviceName: device.deviceName,
+          firstSeenAt: device.firstSeenAt,
+          lastSeenAt: device.lastSeenAt,
+          isCurrent: currentDeviceId ? device.id === currentDeviceId : false,
+          isActive: device.revokedAt === null,
+        })) as DeviceInfo[],
+      };
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;

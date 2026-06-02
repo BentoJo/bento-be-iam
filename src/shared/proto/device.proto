@@ -7,6 +7,47 @@ service DeviceService {
     rpc GetDevice (GetDeviceRequest) returns (GetDeviceResponse);
 }
 
+service DevicesService {
+    rpc ListDevices (ListDevicesRequest) returns (ListDevicesResponse);
+    rpc RevokeDevice (RevokeDeviceRequest) returns (RevokeDeviceResponse);
+    rpc RevokeAllOtherDevices (RevokeAllOtherDevicesRequest) returns (RevokeAllOtherDevicesResponse);
+}
+
+message ListDevicesRequest {
+    string userId = 1;
+    optional string currentDeviceId = 2;
+}
+
+message DeviceItem {
+    string id = 1;
+    string deviceFingerprintHash = 2;
+    string deviceName = 3;
+    string firstSeenAt = 4;
+    string lastSeenAt = 5;
+    bool isCurrent = 6;
+    bool isActive = 7;
+}
+
+message ListDevicesResponse {
+    repeated DeviceItem devices = 1;
+}
+
+message RevokeDeviceRequest {
+    string userId = 1;
+    string deviceId = 2;
+    optional string currentDeviceId = 3;
+}
+
+message RevokeDeviceResponse {
+}
+
+message RevokeAllOtherDevicesRequest {
+    string userId = 1;
+}
+
+message RevokeAllOtherDevicesResponse {
+}
+
 message RegisterDeviceRequest {
     string user_id = 1;
     string device_name = 2;

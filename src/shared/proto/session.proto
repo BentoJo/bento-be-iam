@@ -7,6 +7,36 @@ service SessionService {
     rpc GetSession (GetSessionRequest) returns (GetSessionResponse);
 }
 
+service SessionsService {
+    rpc ListSessions (ListSessionsRequest) returns (ListSessionsResponse);
+    rpc RevokeSession (RevokeSessionRequest) returns (RevokeSessionResponse);
+}
+
+message ListSessionsRequest {
+    string userId = 1;
+    string currentSessionId = 2;
+}
+
+message SessionItem {
+    string id = 1;
+    string ipAddress = 2;
+    string lastActivity = 3;
+    bool isCurrent = 4;
+    string createdAt = 5;
+}
+
+message ListSessionsResponse {
+    repeated SessionItem sessions = 1;
+}
+
+message RevokeSessionRequest {
+    string sessionId = 1;
+    string deivceId = 2;
+}
+
+message RevokeSessionResponse {
+}
+
 message CreateSessionRequest {
     string user_id = 1;
     string device_id = 2;

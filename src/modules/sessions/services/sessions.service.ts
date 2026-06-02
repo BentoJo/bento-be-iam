@@ -14,7 +14,7 @@ export class SessionService {
   async listSessionsService(
     userId: string,
     currentSessionId: string,
-  ): Promise<SessionListResponse[]> {
+  ): Promise<{ sessions: SessionListResponse[] }> {
     try {
       const sessionsList = await db
         .select()
@@ -22,13 +22,15 @@ export class SessionService {
         .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)))
         .orderBy(desc(sessions.lastActivity));
 
-      return sessionsList.map((session) => ({
-        id: session.id,
-        ipAddress: session.ipAddress,
-        lastActivity: session.lastActivity,
-        isCurrent: session.id === currentSessionId,
-        createdAt: session.createdAt,
-      }));
+      return {
+        sessions: sessionsList.map((session) => ({
+          id: session.id,
+          ipAddress: session.ipAddress,
+          lastActivity: session.lastActivity,
+          isCurrent: session.id === currentSessionId,
+          createdAt: session.createdAt,
+        })),
+      };
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;
