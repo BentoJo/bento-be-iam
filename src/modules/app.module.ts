@@ -6,12 +6,6 @@ import { SessionsModule } from './sessions/sessions.module';
 import { JwksModule } from './jwks/jwks.module';
 
 @Module({
-  imports: [
-    AuthModule,
-    UserModule,
-    DevicesModule,
-    SessionsModule,
-    JwksModule,
-  ],
+  imports: [AuthModule, UserModule, DevicesModule, SessionsModule, JwksModule],
 })
 export class AppModule {}
