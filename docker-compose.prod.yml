@@ -1,0 +1,64 @@
+# Reference compose for deploying bento-be-iam on the VPS (/apps/bento-be-iam).
+#
+# The image is built + pushed to GHCR by .github/workflows/deploy.yaml.
+# On the VPS you only PULL + run it (no source there) — do NOT add `build:`.
+#
+# All runtime config (DB url, JWT/JOSE secrets, AWS SES creds, ports, etc.) is
+# read at RUNTIME from a `.env` file NEXT TO this compose on the VPS — it is
+# NOT baked into the image. Create it and lock it down:
+#
+#   # /apps/bento-be-iam/.env   (chmod 600)
+#   POSTGRES_USER=iam
+#   POSTGRES_PASSWORD=<strong-secret>
+#   POSTGRES_DB=iam
+#   DATABASE_URL=postgresql://iam:<strong-secret>@iam-db:5432/iam
+#   GRPC_PORT=50052
+#   HTTP_PORT=5001
+#   # ...plus JWT/JOSE secrets, AWS_* SES creds, etc.
+#
+# DB MIGRATIONS (drizzle) ARE RUN MANUALLY — this compose does NOT auto-run
+# `drizzle-kit push` / migrate (those can be destructive). After a deploy, run
+# migrations yourself against iam-db, e.g.:
+#
+#   docker compose run --rm iam-service npx drizzle-kit migrate
+#   # (or `... push` only when you intend to sync schema in a non-destructive way)
+#
+# Ports are bound to localhost only — front them with a reverse proxy / mesh.
+# gRPC (50052) is consumed by the gateway over the shared backend-network, so it
+# does not strictly need a host port; the HTTP port (5001) is exposed for health.
+
+services:
+  iam-db:
+    image: postgres:18
+    container_name: iam-db
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - backend-network
+
+  iam-service:
+    image: ghcr.io/bentojo/bento-be-iam:latest
+    container_name: iam-service
+    restart: always
+    depends_on:
+      - iam-db
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    ports:
+      # gRPC + HTTP, bound to localhost (reverse proxy / service mesh in front).
+      - "127.0.0.1:50052:50052"
+      - "127.0.0.1:5001:5001"
+    networks:
+      - backend-network
+
+volumes:
+  postgres_data:
+
+networks:
+  backend-network:
+    external: true
