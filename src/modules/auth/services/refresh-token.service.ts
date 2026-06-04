@@ -11,10 +11,9 @@ import { SessionFunction } from '../../../shared/func/session';
 import { UserFunction } from '../../../shared/func/users';
 import { UserInfo } from '../../../shared/types/users/users';
 import { signAccessToken } from '../../../shared/utils/jwt';
-import { randomBytes } from 'crypto';
 import {
-  ACCESS_TOKEN_EXPIRY,
-  REFRESH_TOKEN_EXPIRY,
+  accessTokenExpiresAt,
+  refreshTokenExpiresAt,
 } from '../../../shared/constants/auth';
 
 @Injectable()
@@ -66,20 +65,22 @@ export class RefreshTokenService {
       deviceId: session.deviceId,
       globalRole: userRecord.globalRole || 'user',
     });
-    // Generate new refresh token and hash it
-    const newRefreshToken = randomBytes(40).toString('hex');
-    const newRefreshTokenHash = await hash(newRefreshToken);
-    // Update session with new refresh token hash and last activity
-    await this.sessionFun.updateSessionRefreshToken(
-      session.id,
-      newRefreshTokenHash,
-    );
+
+    // Deliberately DO NOT rotate the refresh token.
+    //
+    // The frontend refreshes through next-auth's jwt callback, which calls the
+    // gateway server-to-server. Any rotated cookie the gateway sets in that
+    // response lands on the Next.js server, never on the browser — so a rotated
+    // token would be lost and the *next* refresh would fail with UNAUTHENTICATED.
+    // Keeping the token stable makes every refresh path idempotent. We slide the
+    // session's lastActivity instead so it stays "active".
+    await this.sessionFun.touchSession(session.id, session.deviceId);
 
     return {
-      accessToken: accessToken,
-      refreshToken: newRefreshToken,
-      accessTokenExpiresAt: ACCESS_TOKEN_EXPIRY,
-      refreshTokenExpiresAt: REFRESH_TOKEN_EXPIRY,
+      accessToken,
+      refreshToken,
+      accessTokenExpiresAt: accessTokenExpiresAt(),
+      refreshTokenExpiresAt: refreshTokenExpiresAt(),
     };
   }
 

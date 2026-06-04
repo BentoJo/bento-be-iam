@@ -9,11 +9,11 @@ import db from '../../../shared/configs/db.config';
 import { hash } from '../../../shared/utils/hash';
 import { signAccessToken } from '../../../shared/utils/jwt';
 import {
-  ACCESS_TOKEN_EXPIRY,
   MAX_ACTIVE_SESSIONS,
   MAX_DEVICES,
   MIN_SOFT_MATCHES_FOR_MERGE,
-  SESSION_LIFETIME_DAYS,
+  accessTokenExpiresAt,
+  refreshTokenExpiresAt,
 } from '../../../shared/constants/auth';
 import { randomBytes } from 'crypto';
 import { RpcException } from '@nestjs/microservices';
@@ -207,8 +207,8 @@ export class OtpService {
     return {
       accessToken,
       refreshToken,
-      accessTokenExpiresAt: ACCESS_TOKEN_EXPIRY as string,
-      refreshTokenExpiresAt: `${SESSION_LIFETIME_DAYS}d`,
+      accessTokenExpiresAt: accessTokenExpiresAt(),
+      refreshTokenExpiresAt: refreshTokenExpiresAt(),
       user: {
         id: userRecord.id,
         email: userRecord.email,
@@ -327,8 +327,8 @@ export class OtpService {
     return {
       accessToken,
       refreshToken,
-      accessTokenExpiresAt: ACCESS_TOKEN_EXPIRY,
-      refreshTokenExpiresAt: SESSION_LIFETIME_DAYS.toString() + 'd',
+      accessTokenExpiresAt: accessTokenExpiresAt(),
+      refreshTokenExpiresAt: refreshTokenExpiresAt(),
       user: {
         id: userRecord.id,
         email: userRecord.email,
