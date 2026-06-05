@@ -61,13 +61,13 @@ export async function createAndSendOtp(
   if (type === 'LOGIN') {
     subject = 'Your Login OTP';
     htmlContent = loginEmail
-      .replace('{{name}}', name)
-      .replace('{{code}}', otpCode);
+      .replace(/{{name}}/g, name)
+      .replace('{{otp}}', otpCode);
   } else if (type === 'REGISTRATION') {
     subject = 'Your New Verification OTP';
     htmlContent = registerEmail
-      .replace('{{name}}', name)
-      .replace('{{code}}', otpCode);
+      .replace(/{{name}}/g, name)
+      .replace('{{otp}}', otpCode);
   }
   console.log('Registration OTP:', otpCode); // Log the OTP for testing purposes
 
