@@ -1,4 +1,4 @@
-export const ACCESS_TOKEN_EXPIRY = '15m';
+export const ACCESS_TOKEN_EXPIRY = '1w'; // 1 week
 
 export const MIN_SOFT_MATCHES_FOR_MERGE = 1;
 
