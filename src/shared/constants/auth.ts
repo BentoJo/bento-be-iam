@@ -1,3 +1,5 @@
+import { parseDurationToMs } from '../func/general';
+
 export const ACCESS_TOKEN_EXPIRY = '1w'; // 1 week
 
 export const MIN_SOFT_MATCHES_FOR_MERGE = 1;
@@ -13,15 +15,14 @@ export const SESSION_LIFETIME_DAYS = 40;
 export const REFRESH_TOKEN_EXPIRY = '40d';
 
 /**
- * Token lifetimes in SECONDS. The `*_EXPIRY` strings above are kept for the
- * `jsonwebtoken` `expiresIn` option (it understands "15m"/"40d"). The values
- * we hand back to the frontend, however, must be ABSOLUTE unix timestamps —
- * the next-auth jwt callback does `Number(accessTokenExpiresAt) * 1000` and
- * compares against `Date.now()`. Returning a duration string there yields
- * `NaN`, so the client never refreshes.
+ * Token lifetimes in SECONDS, DERIVED from the `*_EXPIRY` strings above so the
+ * value we report to the frontend always matches the JWT's actual `expiresIn`.
+ * (The strings feed `jsonwebtoken`; the seconds feed the absolute-timestamp the
+ * next-auth jwt callback compares against `Date.now()`. If these drift, the
+ * client refreshes on the wrong cadence — e.g. every 15m for a 1-week token.)
  */
-export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
-export const REFRESH_TOKEN_TTL_SECONDS = SESSION_LIFETIME_DAYS * 24 * 60 * 60;
+export const ACCESS_TOKEN_TTL_SECONDS = parseDurationToMs(ACCESS_TOKEN_EXPIRY) / 1000;
+export const REFRESH_TOKEN_TTL_SECONDS = parseDurationToMs(REFRESH_TOKEN_EXPIRY) / 1000;
 
 /** Current unix time in seconds. */
 export const nowEpochSeconds = (): number => Math.floor(Date.now() / 1000);
